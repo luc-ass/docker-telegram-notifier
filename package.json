@@ -1,0 +1,21 @@
+{
+  "name": "docker-telegram-notifier",
+  "version": "1.0.0",
+  "description": "Telegram integration for notifying Docker events",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/poma/docker-telegram-notifier"
+  },
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "healthcheck": "node app.js healthcheck"
+  },
+  "author": "poma, arefaslani",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "JSONStream": "^1.3.5",
+    "dockerode": "^3.0.2",
+    "telegraf": "^3.33.0"
+  }
+}

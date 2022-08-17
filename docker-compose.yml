@@ -1,0 +1,30 @@
+version: "2.2"
+
+services:
+  notifier:
+    image: poma/docker-telegram-notifier
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # for local instance
+      # - ./certs:/certs # for remote instance
+    environment:
+      # How to create bot: https://core.telegram.org/bots#3-how-do-i-create-a-bot
+      # How to get chat id: https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id/32572159#32572159
+      TELEGRAM_NOTIFIER_BOT_TOKEN:
+      TELEGRAM_NOTIFIER_CHAT_ID:
+      # optional args
+      # ONLY_WHITELIST: true
+      # DOCKER_HOST: tcp://example.com:2376 # http/https is detected by port number
+      # DOCKER_CERT_PATH: /certs # should contain ca.pem, cert.pem, key.pem
+
+#  example:
+#    image: hello-world
+#    labels:
+#       telegram-notifier.monitor: true  # always monitor
+#       telegram-notifier.monitor: false # never monitor
+#       # no label = monitor only when not using whitelist
+#    # example docker healthcheck
+#    healthcheck:
+#      test: curl -sS http://127.0.0.1:8545 || exit 1
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
