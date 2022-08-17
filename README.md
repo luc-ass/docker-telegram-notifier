@@ -14,7 +14,8 @@ A Telegram integration to notify Docker events. This service notifies about cont
 # Docker
 docker run -d --env TELEGRAM_NOTIFIER_BOT_TOKEN=token --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id --volume /var/run/docker.sock:/var/run/docker.sock:ro lorcas/docker-telegram-notifier
 ```
-    2. [docker-compose.yml](./docker-compose.yml)
+ 
+   2. [docker-compose.yml](./docker-compose.yml)
 
 
 ## Blacklist and Whitelist
