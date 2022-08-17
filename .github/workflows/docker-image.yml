@@ -3,9 +3,12 @@ name: Docker Image CI
 on:
   release:
     branches: 
-        - main
+      - main
     tags:
-        - 'v*'
+      - 'v*'
+  push:
+    branches:
+      - telegraf-v4
 
 jobs:
   build:
