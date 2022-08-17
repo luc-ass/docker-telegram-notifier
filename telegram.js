@@ -1,4 +1,4 @@
-const Telegram = require('telegraf/telegram');
+const { Telegram } = require('telegraf');
 
 class TelegramClient {
   constructor() {
