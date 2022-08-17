@@ -9,13 +9,21 @@ A Telegram integration to notify Docker events. This service notifies about cont
 1. [Set up a telegram bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot) and get the `Bot Token`. then add the bot to a group and make it admin and [extract the Chat ID](https://stackoverflow.com/a/32572159/882223).
 
 2. Run a container:
-    1. docker run
-```sh
-# Docker
-docker run -d --env TELEGRAM_NOTIFIER_BOT_TOKEN=token --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id --volume /var/run/docker.sock:/var/run/docker.sock:ro lorcas/docker-telegram-notifier
-```
- 
-   2. [docker-compose.yml](./docker-compose.yml)
+<details>
+    <summary>
+        `docker run`
+    </summary>
+    ```sh
+    # docker run
+    docker run -d --env TELEGRAM_NOTIFIER_BOT_TOKEN=token --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id --volume /var/run/docker.sock:/var/run/docker.sock:ro lorcas/docker-telegram-notifier
+    ```
+</details>
+<details>
+    <summary>
+        `docker-compose`
+    </summary>
+    [docker-compose.yml](./docker-compose.yml)
+</details>
 
 
 ## Blacklist and Whitelist
