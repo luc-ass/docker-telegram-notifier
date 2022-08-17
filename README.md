@@ -1,4 +1,4 @@
-# ⚠️ UNDER CONSTRUCTION - NOT READY ⚠️
+# ⚠️ UNDER CONSTRUCTION - NOT PRODUCTION READY ⚠️
 
 # Docker Telegram Notifier 'buildstatus-missing'
 
@@ -6,17 +6,13 @@ A Telegram integration to notify Docker events. This service notifies about cont
 
 ## How to Run
 
-[Set up a telegram bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot) and get the `Bot Token`. then add the bot to a group and make it admin and [extract the Chat ID](https://stackoverflow.com/a/32572159/882223).
+1. [Set up a telegram bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot) and get the `Bot Token`. then add the bot to a group and make it admin and [extract the Chat ID](https://stackoverflow.com/a/32572159/882223).
 
-Run a container as follows:
+2. Run a container as follows:
 
 ```sh
 # Docker
-docker run -d --env TELEGRAM_NOTIFIER_BOT_TOKEN=token --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id --volume /var/run/docker.sock:/var/run/docker.sock:ro poma/docker-telegram-notifier
-
-# Docker Compose
-curl -O https://raw.githubusercontent.com/poma/docker-telegram-notifier/master/docker-compose.yml
-docker-compose up -d
+docker run -d --env TELEGRAM_NOTIFIER_BOT_TOKEN=token --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id --volume /var/run/docker.sock:/var/run/docker.sock:ro lorcas/docker-telegram-notifier
 ```
 
 ## Blacklist and Whitelist
