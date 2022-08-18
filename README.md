@@ -1,5 +1,5 @@
 # Docker Telegram Notifier 
-# ![docker build](https://github.com/luc-ass/docker-telegram-notifier/actions/workflows/docker-image.yml/badge.svg) ![Cirrus CI - Specific Task Build Status](https://img.shields.io/cirrus/github/luc-ass/docker-telegram-notifier?color=blue&logo=docker&logoColor=white&style=for-the-badge&task=docker-image)
+# ![GitHub Workflow Status](https://shields.api-test.nl/github/workflow/status/luc-ass/docker-telegram-notifier/docker-build?&style=for-the-badge) ![Docker Pulls](https://img.shields.io/docker/pulls/lorcas/docker-telegram-notifier?logo=docker&style=for-the-badge) ![Docker Image Version (latest semver)](https://img.shields.io/docker/v/lorcas/docker-telegram-notifier?logo=docker&style=for-the-badge)
 
 
 A Telegram integration to notify Docker events. This service notifies about container `start`, `stop`, `restart` events, and changes of Docker `healthcheck status`. If you wish you can add more event notifications in `templates.js` file.
