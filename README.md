@@ -1,4 +1,5 @@
-# Docker Telegram Notifier 'buildstatus-missing'
+# Docker Telegram Notifier ![docker build](https://github.com/luc-ass/docker-telegram-notifier/actions/workflows/main.yml/badge.svg)
+
 
 A Telegram integration to notify Docker events. This service notifies about container `start`, `stop`, `restart` events, and changes of Docker `healthcheck status`. If you wish you can add more event notifications in `templates.js` file.
 
