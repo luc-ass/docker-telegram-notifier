@@ -2,6 +2,8 @@
 
 A Telegram integration to notify Docker events. This service notifies about container `start`, `stop`, `restart` events, and changes of Docker `healthcheck status`. If you wish you can add more event notifications in `templates.js` file.
 
+If you spot any problems, feel free to fix it and open a [pull request](https://github.com/luc-ass/docker-telegram-notifier/pulls) or open a new [issue](https://github.com/luc-ass/docker-telegram-notifier/issues).
+
 ## How to Run
 
 1. [Set up a telegram bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot) and get the `Bot Token`. then add the bot to a group and make it admin and [extract the Chat ID](https://stackoverflow.com/a/32572159/882223).
@@ -59,4 +61,4 @@ Tutorial on how to generate docker certs can be found [here](https://docs.docker
 
 ## Credits
 
-This container is based off the [container by poma](https://hub.docker.com/r/poma/docker-telegram-notifier). My branch was created, beacause I wanted to run his container on `linux/arm64` and provide a way to keep his work alive and up to date.
+This container is based off the [container by poma](https://hub.docker.com/r/poma/docker-telegram-notifier), originally an idea of [arefaslani](https://github.com/arefaslani). My branch was created, beacause I wanted to run his container on `linux/arm64` (i.e. Raspberry Pi) and provide a way to keep their work alive and up to date.
