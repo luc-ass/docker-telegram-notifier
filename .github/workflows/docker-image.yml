@@ -6,6 +6,8 @@ on:
       - main
     tags:
       - 'v*'
+    types:
+      - publish
   push:
     branches:
       - telegraf-v4
