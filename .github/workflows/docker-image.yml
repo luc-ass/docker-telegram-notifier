@@ -7,7 +7,7 @@ on:
     tags:
       - 'v*'
     types:
-      - publish
+      - published
   push:
     branches:
       - telegraf-v4
