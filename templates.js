@@ -3,7 +3,7 @@ module.exports = {
         `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n${e.Actor.Attributes.image}`,
 
     container_die: e =>
-        `&#128721; <b>${e.Actor.Attributes.name}</b> stopped!\n${e.Actor.Attributes.image}\nExit Code: ${e.Actor.Attributes.exitCode}`,
+        `&#128308; <b>${e.Actor.Attributes.name}</b> stopped!\n${e.Actor.Attributes.image}\nExit Code: ${e.Actor.Attributes.exitCode}`,
 
     'container_health_status: healthy': e =>
         `&#9989; <b>${e.Actor.Attributes.name}</b> healthy\n${e.Actor.Attributes.image}`,
