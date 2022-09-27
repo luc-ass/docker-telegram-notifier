@@ -9,7 +9,10 @@ class TelegramClient {
     return this.telegram.sendMessage(
       process.env.TELEGRAM_NOTIFIER_CHAT_ID,
       message,
-      { parse_mode: 'HTML' }
+      { 
+        parse_mode: 'HTML',
+        disable_web_page_preview: true
+      }
     );
   }
 
