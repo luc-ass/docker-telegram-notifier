@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - telegraf-v4
+  schedule:
+      - cron: "48 16 * * 4"
 
 jobs:
   build:
