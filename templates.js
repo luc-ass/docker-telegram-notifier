@@ -29,6 +29,6 @@ module.exports = {
         `&#9989; <b>${e.Actor.Attributes.name}</b> healthy\n${e.Actor.Attributes.image}`,
 
     'container_health_status: unhealthy': e =>
-        `&#x26A0; <b>${e.Actor.Attributes.name}</b> unhealthy!\n${e.Actor.Attributes.image}`,
+        `&#9888; <b>${e.Actor.Attributes.name}</b> unhealthy!\n${e.Actor.Attributes.image}`,
 };
 
