@@ -1,5 +1,6 @@
 const Docker = require('dockerode');
 const TelegramClient = require('./telegram');
+const os = require('os');
 const JSONStream = require('JSONStream');
 const templates = require('./templates');
 
@@ -30,7 +31,7 @@ async function sendEventStream() {
 
 async function sendVersion() {
   const version = await docker.version();
-  let text = `Connected to docker ${version.Version}`;
+  let text = `Connected to docker on ${os.hostname()} (v${version.Version})`;
   console.log(text, "\n");
   await telegram.send(text);
 }
