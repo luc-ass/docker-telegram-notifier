@@ -26,6 +26,7 @@ version: "2.2"
 services:
   notifier:
     image: lorcas/docker-telegram-notifier:latest
+    hostname: "my_host"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro # for local instance
       # - ./certs:/certs # for remote instance
