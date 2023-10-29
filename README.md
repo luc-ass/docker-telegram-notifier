@@ -17,11 +17,11 @@ If you spot any problems, feel free to fix them and open a [pull request](https:
 2. Run a container:
 ```sh
 # docker run
-docker run -d --env TELEGRAM_NOTIFIER_BOT_TOKEN=token --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id --volume /var/run/docker.sock:/var/run/docker.sock:ro lorcas/docker-telegram-notifier
+docker run -d --env TELEGRAM_NOTIFIER_BOT_TOKEN=token --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id --volume /var/run/docker.sock:/var/run/docker.sock:ro --hostname my_host lorcas/docker-telegram-notifier
 ```
 ```yml
 # docker compose
-version: "2.2"
+version: "3.7"
 
 services:
   notifier:
@@ -39,19 +39,21 @@ services:
       # ONLY_WHITELIST: true
       # DOCKER_HOST: tcp://example.com:2376 # http/https is detected by port number
       # DOCKER_CERT_PATH: /certs # should contain ca.pem, cert.pem, key.pem
-
-#  example:
-#    image: hello-world
-#    labels:
-#       telegram-notifier.monitor: true  # always monitor
-#       telegram-notifier.monitor: false # never monitor
-#       # no label = monitor only when not using whitelist
-#    # example docker healthcheck
-#    healthcheck:
-#      test: curl -sS http://127.0.0.1:8545 || exit 1
-#      interval: 30s
-#      timeout: 10s
-#      retries: 3
+```
+3. Add healthcheck and/or labels to your containers
+```yml
+example:
+  image: hello-world
+  labels:
+     telegram-notifier.monitor: true  # always monitor
+     telegram-notifier.monitor: false # never monitor
+     # no label = monitor only when not using whitelist
+  # example docker healthcheck
+  healthcheck:
+    test: curl -sS http://127.0.0.1:8545 || exit 1
+    interval: 30s
+    timeout: 10s
+    retries: 3
 ```
 
 ## Blacklist and Whitelist
