@@ -24,7 +24,7 @@ module.exports = {
         }
 
         if (exitCode in normalMap) {
-            return `&#9209; <b>${e.Actor.Attributes.name}</b> stopped!\n${e.Actor.Attributes.image}\n${normalMap[exitCode]}`;
+            return `&#9209;&#65039; <b>${e.Actor.Attributes.name}</b> stopped!\n${e.Actor.Attributes.image}\n${normalMap[exitCode]}`;
         } else if (exitCode in nonNormalMap) {
             return `&#128308; <b>${e.Actor.Attributes.name}</b> stopped!\n${e.Actor.Attributes.image}\n${nonNormalMap[exitCode]}`;
         } else {
