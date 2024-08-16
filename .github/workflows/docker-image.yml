@@ -1,4 +1,4 @@
-name: JioTV Go Docker Build
+name: Docker Build
 
 on:
   push:
