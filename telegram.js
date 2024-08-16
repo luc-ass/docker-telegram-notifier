@@ -11,7 +11,8 @@ class TelegramClient {
       message,
       { 
         parse_mode: 'HTML',
-        disable_web_page_preview: true
+        disable_web_page_preview: true,
+        message_thread_id: process.env.TELEGRAM_NOTIFIER_TOPIC_ID,
       }
     );
   }
