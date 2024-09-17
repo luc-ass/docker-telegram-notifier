@@ -1,4 +1,4 @@
-FROM node:18.19.1-alpine AS BUILD_IMAGE
+FROM node:18.20.4-alpine AS BUILD_IMAGE
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
