@@ -63,58 +63,6 @@ If you encounter any issues, please feel free to contribute by fixing them and o
         retries: 3
     ```
 
-## Notification messages customization
-
-1. __Adapt the template:__ download and modify the message strings from [`templates.js`](./templates.js) according to your needs.
-
-2. __Bind your customized file to the container:__
-
-    using `docker run`:
-    ```sh
-    docker run -d \
-        --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
-        --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id \
-        --volume /var/run/docker.sock:/var/run/docker.sock:ro \
-        --volume ./my-template.js:/usr/src/app/templates.js:ro \
-        --hostname my_host \
-        lorcas/docker-telegram-notifier
-    ```
-
-    using `docker-compose.yaml`
-    ```yml
-    services:
-      notifier:
-        image: lorcas/docker-telegram-notifier:latest
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock:ro
-          # Bind customized file to /templates/* in the container:
-          - ./my-template.js:/usr/src/app/templates.js:ro
-        environment:
-          # ...
-
-#### Customizing message strings: supported variables
-
-Here are some variables available to customize the notification messages:
-
-| Variable | Description |
-| -------- | ----------- |
-| `${e.Actor.Attributes.name}` | Docker container Name |
-| `${e.Actor.Attributes.container}` | Docker container ID |
-| `${e.Actor.Attributes.docker.network.internal}` | Docker Network Internal |
-| `${e.Actor.Attributes.healthcheck.status}` | Docker container Healthcheck Status |
-| `${e.Actor.Attributes.image}` | Docker container Image used |
-| `${e.Actor.Attributes.maintainer}` | Docker container Maintainer |
-| `${e.Actor.Attributes.signal}` | Docker container Exit Signal |
-| `${e.Actor.Attributes.exitCode` | Docker container Exit Code |
-
-The following are only available if the container was started using `docker-compose.yaml`
-| Variable | Description |
-| -------- | ----------- |
-| `${e.Actor.Attributes.com.docker.compose.project}` | Compose Project Name |
-| `${e.Actor.Attributes.com.docker.compose.service}` | Compose Service Name |
-| `${e.Actor.Attributes.com.docker.compose.version}` | Compose Version |
-| `${e.Actor.Attributes.com.docker.compose.container-number}` | Compose container Number |
-
 ## Blacklist and Whitelist
 
 You can disable notifications from specific containers by adding the label `--label telegram-notifier.monitor=false` to them.
@@ -139,16 +87,111 @@ services:
     labels:
       # Monitor control
       telegram-notifier.monitor: true
-      
+
       # Channel override (optional)
       telegram-notifier.chat-id: "-100123456789"
-      
+
       # Thread/Topic override (optional - use only one)
       telegram-notifier.topic-id: "12345"
       telegram-notifier.thread-id: "12345"
 ```
 
 If these labels are not specified, the container will use the global settings from the notifier's environment variables.
+
+
+## Notification messages customization
+
+1. __Adapt the template:__ download and modify the message strings from [`templates.js`](./templates.js) according to your needs.
+
+2. __Bind your customized file to the container:__
+
+    using `docker run`:
+    ```sh
+    docker run -d \
+        --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
+        --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id \
+        --volume /var/run/docker.sock:/var/run/docker.sock:ro \
+        --volume ./my-template.js:/usr/src/app/templates.js:ro \
+        --hostname my_host \
+        lorcas/docker-telegram-notifier
+    ```
+
+    or using `docker-compose.yaml`
+    ```yml
+    services:
+      notifier:
+        image: lorcas/docker-telegram-notifier:latest
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock:ro
+          # Bind customized file to /templates/* in the container:
+          - ./my-template.js:/usr/src/app/templates.js:ro
+        environment:
+          # ...
+
+### Customizing message strings
+#### Default supported docker event variables
+
+Here are some variables available to customize the notification messages.
+
+<details>
+<summary>Example customized message</summary>
+
+```js
+container_start: e =>
+        `&#9989; ${e.Actor.Attributes['com.docker.compose.project']} <b>${e.Actor.Attributes['com.docker.compose.service']}</b> is UP!\n` +
+        `<pre>${e.Actor.Attributes.image}</pre>`,
+```
+</details>
+
+
+| Variable | Description |
+| -------- | ----------- |
+| `${e.Actor.Attributes.name}` | Docker container Name |
+| `${e.Actor.Attributes.container}` | Docker container ID |
+| `${e.Actor.Attributes.image}` | Docker container Image used |
+
+The following variables are only available if the container was started using `docker compose`
+| Variable | Description |
+| -------- | ----------- |
+| `${e.Actor.Attributes['com.docker.compose.container-number']}` | Compose container Number |
+| `${e.Actor.Attributes['com.docker.compose.project']}` | Compose Project Name |
+| `${e.Actor.Attributes['com.docker.compose.service']}` | Compose Service Name |
+| `${e.Actor.Attributes['com.docker.compose.version']}` | Compose Version |
+
+#### Custom container information in Telegram notifications
+
+Leverage the `labels:` defintion on docker services to make custom information available to notification messages:
+
+1. __Add custom labels to a container:__
+
+    using `docker run`:
+    ```sh
+    docker run -d \
+        --label "telegram-notifier.monitor=true" \
+        --label "mycustom.telegram.container-info=Access via http://myhost.com/" \
+        hello-world
+    ```
+
+
+    or using `docker-compose.yaml`
+    ```yml
+    services:
+      example:
+        image: hello-world
+        labels:
+          # Monitor control
+          telegram-notifier.monitor: true
+
+          # Custom defined labels and information
+          mycustom.telegram.container-info: "Access via http://myhost.com/"
+
+2. __And adapt your customized messages template:__
+    ```js
+    container_start: e =>
+            `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n${e.Actor.Attributes.image}\n` +
+            (${e.Actor.Attributes['mycustom.telegram.container-info']} ? `NOTE: ${e.Actor.Attributes['mycustom.telegram.container-info']}` : '')
+            // if-else prevents the message from failing when custom info is not passed
+    ```
 
 ## Credits
 
