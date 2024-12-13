@@ -1,6 +1,5 @@
 const Docker = require('dockerode');
 const TelegramClient = require('./telegram');
-const os = require('os');
 const JSONStream = require('JSONStream');
 const templates = require('./templates');
 
@@ -9,15 +8,36 @@ const docker = new Docker();
 const telegram = new TelegramClient();
 
 async function sendEvent(event) {
-  // console.debug(event);
   const template = templates[`${event.Type}_${event.Action}`];
   if (template) {
-    const label = event.Actor && event.Actor.Attributes && event.Actor.Attributes['telegram-notifier.monitor'];
-    const shouldMonitor = label === undefined ? undefined : label.toLowerCase().trim() !== 'false';
+    const attributes = event.Actor?.Attributes || {};
+    
+    // Check monitoring status
+    const monitorLabel = attributes['telegram-notifier.monitor'];
+    const shouldMonitor = monitorLabel === undefined ? 
+      undefined : 
+      monitorLabel.toLowerCase().trim() !== 'false';
+
     if (shouldMonitor || !ONLY_WHITELIST && shouldMonitor !== false) {
+      // Get container-specific channel settings
+      const overrides = {};
+
+      // Only add chatId if explicitly set via label
+      const labelChatId = attributes['telegram-notifier.chat-id'];
+      if (labelChatId) {
+        overrides.chatId = labelChatId;
+      }
+
+      // Only add threadId if explicitly set via label
+      const labelThreadId = attributes['telegram-notifier.topic-id'] || 
+                            attributes['telegram-notifier.thread-id'];
+      if (labelThreadId) {
+        overrides.threadId = labelThreadId;
+      }
+
       const attachment = template(event);
       console.log(attachment, "\n");
-      await telegram.send(attachment)
+      await telegram.send(attachment, overrides);
     }
   }
 }
@@ -31,7 +51,16 @@ async function sendEventStream() {
 
 async function sendVersion() {
   const version = await docker.version();
-  let text = `Connected to docker on ${os.hostname()} (v${version.Version})`;
+  const info = await docker.info();
+  let text = templates.connection_message({
+    hostname: info.Name,
+    os: info.OperatingSystem,
+    type: info.OSType,
+    architecture: info.Architecture,
+    cpu: info.NCPU,
+    memory: (info.MemTotal / (1024 * 1024)).toFixed(2) + 'MB',
+    version: version.Version
+  });
   console.log(text, "\n");
   await telegram.send(text);
 }

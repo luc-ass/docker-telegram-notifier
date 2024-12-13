@@ -8,6 +8,7 @@ on:
   #push:
   #  branches:
   #    - telegraf-v4
+
   schedule:
       - cron: "0 17 * * 4"
 
