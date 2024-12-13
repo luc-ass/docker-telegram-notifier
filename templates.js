@@ -1,4 +1,7 @@
 module.exports = {
+    connection_message: ({hostname, version, os, type, architecture, cpu, memory}) =>
+        `Connected to docker v${version} on ${hostname}\nOS: ${type}/${architecture} (${os}), ${cpu} CPU, ${memory} RAM`,
+
     container_start: e =>
         `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n${e.Actor.Attributes.image}`,
 
@@ -38,4 +41,3 @@ module.exports = {
     'container_health_status: unhealthy': e =>
         `&#9888; <b>${e.Actor.Attributes.name}</b> unhealthy!\n${e.Actor.Attributes.image}`,
 };
-
