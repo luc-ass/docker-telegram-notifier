@@ -3,7 +3,7 @@ const { Telegram } = require('telegraf');
 class TelegramClient {
   constructor() {
     this.telegram = new Telegram(process.env.TELEGRAM_NOTIFIER_BOT_TOKEN);
-    this.threadId = process.env.TELEGRAM_THREAD_ID || null;
+    this.threadId = process.env.TELEGRAM_NOTIFIER_THREAD_ID || null;
   }
 
   send(message) {

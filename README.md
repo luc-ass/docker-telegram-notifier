@@ -19,6 +19,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
     docker run -d \
         --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
         --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id \
+        --env TELEGRAM_NOTIFIER_THREAD_ID=thread_id \
         --volume /var/run/docker.sock:/var/run/docker.sock:ro \
         --hostname my_host \
         lorcas/docker-telegram-notifier
@@ -39,6 +40,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
           # How to get chat id: https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id/32572159#32572159
           TELEGRAM_NOTIFIER_BOT_TOKEN:
           TELEGRAM_NOTIFIER_CHAT_ID:
+          TELEGRAM_NOTIFIER_THREAD_ID:
           # optional args
           # ONLY_WHITELIST: true
           # DOCKER_HOST: tcp://example.com:2376 # http/https is detected by port number
