@@ -3,9 +3,9 @@ name: docker-build
 on:
   release:
     types: [published] 
+  push:
     tags:
       - 'v*'
-  push:
     branches:
       - telegraf-v4
   schedule:
@@ -23,15 +23,16 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # list of Doccker images to use as base name for tags
           images:
             lorcas/docker-telegram-notifier
-          # generate Docker tags based on the following events/attributes
+          # Modified tags configuration to handle beta versions
           tags: |
             type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern={{version}},enable=${{ !contains(github.ref, '-beta') }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ !contains(github.ref, '-beta') }}
+            type=semver,pattern={{major}},enable=${{ !contains(github.ref, '-beta') }}
+            # Add specific handling for beta versions
+            type=match,pattern=v\d+\.\d+\.\d+-beta\.\d+,group=0
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
