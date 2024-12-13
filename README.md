@@ -96,20 +96,24 @@ If you encounter any issues, please feel free to contribute by fixing them and o
 
 Here are some variables available to customize the notification messages:
 
-* `${e.Actor.Attributes.name}` = Docker container Name
-* `${e.Actor.Attributes.container}` = Docker container ID
-* `${e.Actor.Attributes.docker.network.internal}` = Docker Network Internal
-* `${e.Actor.Attributes.healthcheck.status}` = Docker container Healthcheck Status
-* `${e.Actor.Attributes.image}` = Docker container Image used
-* `${e.Actor.Attributes.maintainer}` = Docker container Maintainer
-* `${e.Actor.Attributes.signal}` = Docker container Exit Signal
-* `${e.Actor.Attributes.exitCode` = Docker container Exit Code
+| Variable | Description |
+| -------- | ----------- |
+| `${e.Actor.Attributes.name}` | Docker container Name |
+| `${e.Actor.Attributes.container}` | Docker container ID |
+| `${e.Actor.Attributes.docker.network.internal}` | Docker Network Internal |
+| `${e.Actor.Attributes.healthcheck.status}` | Docker container Healthcheck Status |
+| `${e.Actor.Attributes.image}` | Docker container Image used |
+| `${e.Actor.Attributes.maintainer}` | Docker container Maintainer |
+| `${e.Actor.Attributes.signal}` | Docker container Exit Signal |
+| `${e.Actor.Attributes.exitCode` | Docker container Exit Code |
 
-\+ These are only available if the container was started using `docker-compose.yaml`
-* `${e.Actor.Attributes.com.docker.compose.project}` = Compose Project Name
-* `${e.Actor.Attributes.com.docker.compose.service}` = Compose Service Name
-* `${e.Actor.Attributes.com.docker.compose.version}` = Compose Version
-* `${e.Actor.Attributes.com.docker.compose.container-number}` = Compose container Number
+The following are only available if the container was started using `docker-compose.yaml`
+| Variable | Description |
+| -------- | ----------- |
+| `${e.Actor.Attributes.com.docker.compose.project}` | Compose Project Name |
+| `${e.Actor.Attributes.com.docker.compose.service}` | Compose Service Name |
+| `${e.Actor.Attributes.com.docker.compose.version}` | Compose Version |
+| `${e.Actor.Attributes.com.docker.compose.container-number}` | Compose container Number |
 
 ## Blacklist and Whitelist
 
