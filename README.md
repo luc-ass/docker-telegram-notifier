@@ -75,7 +75,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
         --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
         --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id \
         --volume /var/run/docker.sock:/var/run/docker.sock:ro \
-        --volume /my-template.js:/usr/src/app/templates.js:ro \
+        --volume ./my-template.js:/usr/src/app/templates.js:ro \
         --hostname my_host \
         lorcas/docker-telegram-notifier
     ```
