@@ -58,7 +58,7 @@ async function sendVersion() {
     type: info.OSType,
     architecture: info.Architecture,
     cpu: info.NCPU,
-    memory: (info.MemTotal / (1024 * 1024)).toFixed(2) + 'MB',
+    memory: Math.floor(info.MemTotal / (1024 * 1024)) + ' MB',
     version: version.Version
   });
   console.log(text, "\n");
