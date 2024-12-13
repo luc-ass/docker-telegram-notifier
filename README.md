@@ -19,7 +19,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
     docker run -d \
         --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
         --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id \
-        --env TELEGRAM_NOTIFIER_THREAD_ID=thread_id \
+        --env TELEGRAM_NOTIFIER_TOPIC_ID=topic_id \
         --volume /var/run/docker.sock:/var/run/docker.sock:ro \
         --hostname my_host \
         lorcas/docker-telegram-notifier
@@ -38,8 +38,10 @@ If you encounter any issues, please feel free to contribute by fixing them and o
         environment:
           # How to create bot: https://core.telegram.org/bots#3-how-do-i-create-a-bot
           # How to get chat id: https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id/32572159#32572159
-          TELEGRAM_NOTIFIER_BOT_TOKEN:
+          TELEGRAM_NOTIFIER_BOT_TOKEN: 
           TELEGRAM_NOTIFIER_CHAT_ID:
+          # One of the following two can be used, but not both
+          TELEGRAM_NOTIFIER_TOPIC_ID:
           TELEGRAM_NOTIFIER_THREAD_ID:
           # optional args
           # ONLY_WHITELIST: true
