@@ -3,9 +3,9 @@ name: docker-build
 on:
   release:
     types: [published] 
-  push:
     tags:
-      - 'v*'
+        - 'v*'
+  push:
     branches:
       - telegraf-v4
   schedule:
