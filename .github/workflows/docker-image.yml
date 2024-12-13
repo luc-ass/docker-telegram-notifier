@@ -3,11 +3,12 @@ name: docker-build
 on:
   release:
     types: [published] 
-  push:
     tags:
-        - 'v*'
-    branches:
-      - telegraf-v4
+      - 'v*'
+  #push:
+  #  branches:
+  #    - telegraf-v4
+
   schedule:
       - cron: "0 17 * * 4"
 
