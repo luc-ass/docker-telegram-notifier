@@ -5,7 +5,7 @@ on:
     types: [published] 
   push:
     tags:
-      - 'v*'
+        - 'v*'
     branches:
       - telegraf-v4
   schedule:
