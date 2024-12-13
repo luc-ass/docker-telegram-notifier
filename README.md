@@ -76,6 +76,27 @@ By default notifier connects to a local docker instance (don't forget to specify
 Notifier accepts usual `DOCKER_HOST` and `DOCKER_CERT_PATH` environment variables to specify remote instance. For http endpoint you need to specify only `--env DOCKER_HOST=tcp://example.com:2375` (make sure to keep such instances behind the firewall). For https, you'll also need to mount a volume with https certificates that contains `ca.pem`, `cert.pem`, and `key.pem`: `--env DOCKER_HOST=tcp://example.com:2376 --env DOCKER_CERT_PATH=/certs --volume $(pwd):/certs`
 Tutorial on how to generate docker certs can be found [here](https://docs.docker.com/engine/security/https/)
 
+## Container-Specific Notifications
+
+You can configure different Telegram channels and threads/topics for specific containers using Docker labels:
+
+```yaml
+services:
+  example:
+    image: hello-world
+    labels:
+      # Monitor control
+      telegram-notifier.monitor: true
+      
+      # Channel override (optional)
+      telegram-notifier.chat-id: "-100123456789"
+      
+      # Thread/Topic override (optional - use only one)
+      telegram-notifier.topic-id: "12345"
+      telegram-notifier.thread-id: "12345"
+```
+
+If these labels are not specified, the container will use the global settings from the notifier's environment variables.
 
 ## Credits
 

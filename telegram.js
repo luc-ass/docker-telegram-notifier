@@ -9,31 +9,38 @@ class TelegramClient {
       null;
   }
 
-  send(message) {
+  async send(message, overrides = {}) {
     const options = {
       parse_mode: 'HTML',
       disable_web_page_preview: true
     };
 
-    if (this.threadId) {
-      options.message_thread_id = parseInt(this.threadId);
+    const threadId = overrides.threadId || this.threadId;
+    if (threadId) {
+      options.message_thread_id = parseInt(threadId);
     }
 
+    const chatId = overrides.chatId || process.env.TELEGRAM_NOTIFIER_CHAT_ID;
+
     return this.telegram.sendMessage(
-      process.env.TELEGRAM_NOTIFIER_CHAT_ID,
+      chatId,
       message,
       options
     );
   }
 
-  sendError(e) {
+  async sendError(e, overrides = {}) {
     const options = {};
-    if (this.threadId) {
-      options.message_thread_id = parseInt(this.threadId);
+    
+    const threadId = overrides.threadId || this.threadId;
+    if (threadId) {
+      options.message_thread_id = parseInt(threadId);
     }
 
+    const chatId = overrides.chatId || process.env.TELEGRAM_NOTIFIER_CHAT_ID;
+
     return this.telegram.sendMessage(
-      process.env.TELEGRAM_NOTIFIER_CHAT_ID,
+      chatId,
       `Error: ${e}`,
       options
     );
