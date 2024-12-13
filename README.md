@@ -65,7 +65,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
 
 ## Notification messages customization
 
-1. __Download and modify the template:__ Download and modify the message strings in [`templates.js`](./templates.js) to according to your needs.
+1. __Adapt the template:__ download and modify the message strings from [`templates.js`](./templates.js) according to your needs.
 
 2. __Bind your customized file to the container:__
 
@@ -75,7 +75,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
         --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
         --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id \
         --volume /var/run/docker.sock:/var/run/docker.sock:ro \
-        --volume /my-template.js:/templates/messages.js:ro \
+        --volume ./my-template.js:/usr/src/app/templates.js:ro \
         --hostname my_host \
         lorcas/docker-telegram-notifier
     ```
@@ -88,7 +88,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock:ro
           # Bind customized file to /templates/* in the container:
-          - ./my-template.js:/templates/messages.js:ro
+          - ./my-template.js:/usr/src/app/templates.js:ro
         environment:
           # ...
 
