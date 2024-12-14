@@ -139,6 +139,7 @@ services:
 
 If these labels are not specified, the container will use the global settings from the notifier's environment variables.
 
+
 ### 2.4 Remote docker instance
 
 By default notifier connects to a local docker instance (don't forget to specify `--volume /var/run/docker.sock:/var/run/docker.sock:ro` for this case). But if you have monitoring and the service on the same host, you will not receive notifications if the host goes down. So I recommend to have monitoring separately.
@@ -194,6 +195,7 @@ services:
 
 
 ### 3.1 Customizing message strings
+
 ### 3.1.1 Default docker event variables
 
 Here are some variables available to customize the notification messages.
@@ -210,6 +212,7 @@ container_start: e =>
         `<pre>${e.Actor.Attributes.image}</pre>`,
 ```
 
+
 ### 3.1.2 Docker Compose variables
 
 The following variables are only available if the container was started using `docker compose`
@@ -220,13 +223,12 @@ The following variables are only available if the container was started using `d
 | `${e.Actor.Attributes['com.docker.compose.service']}` | Compose Service Name |
 | `${e.Actor.Attributes['com.docker.compose.version']}` | Compose Version |
 
+
 ### 3.1.3 Custom container information in Telegram notifications
 
 Leverage the `labels:` defintion on docker services to make custom information available to notification messages:
 
 1. __Add custom labels to a container:__
-
-    
 
     using `docker-compose.yaml`
     ```yml
