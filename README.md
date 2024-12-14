@@ -71,7 +71,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
         retries: 3
     ```
 
-This setup will start the container and notify you about Docker events. For more advanced configuration, see the [Advanced setup](#-advanced-setup) section.
+This setup will start the container and notify you about Docker events. For more advanced configuration, see the [Advanced setup](#2-advanced-setup) section.
 
 
 ## 2. Advanced setup
