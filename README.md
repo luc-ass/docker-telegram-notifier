@@ -199,7 +199,7 @@ services:
 Here are some variables available to customize the notification messages.
 
 | Variable | Description |
-| -------- | ----------- |
+| :-------- | :----------- |
 | `${e.Actor.Attributes.name}` | Docker container Name |
 | `${e.Actor.Attributes.container}` | Docker container ID |
 | `${e.Actor.Attributes.image}` | Docker container Image used |
@@ -214,7 +214,7 @@ container_start: e =>
 
 The following variables are only available if the container was started using `docker compose`
 | Variable | Description |
-| -------- | ----------- |
+| :-------- | :----------- |
 | `${e.Actor.Attributes['com.docker.compose.container-number']}` | Compose container Number |
 | `${e.Actor.Attributes['com.docker.compose.project']}` | Compose Project Name |
 | `${e.Actor.Attributes['com.docker.compose.service']}` | Compose Service Name |
