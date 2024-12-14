@@ -37,7 +37,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
 
 2. Run the container
 
-    __docker-compose.yaml__
+    using `docker-compose.yaml`
     ```yaml
     services:
       telegram-notifier:
@@ -49,7 +49,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
           TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
     ```
 
-    _or_ __docker run__
+    _or_ using `docker run`
     ```sh
     docker run -d \
       --env TELEGRAM_NOTIFIER_BOT_TOKEN=<bot_token> \
@@ -92,12 +92,9 @@ services:
 docker run -d --label telegram-notifier.monitor=false hello-world
 ```
 
-
 ### 2.2 Whitelisting
 
 Alternatively you can receive notifications only from whitelisted containers by setting `--env ONLY_WHITELIST=true` on the notifier instance, and `--label telegram-notifier.monitor=true` on the containers you want to monitor. 
-
-
 
 ```yaml
 services:
@@ -119,7 +116,6 @@ services:
 ```sh
 docker run -d --label telegram-notifier.monitor=true hello-world
 ```
-
 
 ### 2.3 Per container notifications
 
@@ -143,7 +139,6 @@ services:
 
 If these labels are not specified, the container will use the global settings from the notifier's environment variables.
 
-
 ### 2.4 Remote docker instance
 
 By default notifier connects to a local docker instance (don't forget to specify `--volume /var/run/docker.sock:/var/run/docker.sock:ro` for this case). But if you have monitoring and the service on the same host, you will not receive notifications if the host goes down. So I recommend to have monitoring separately.
@@ -165,6 +160,7 @@ services:
       DOCKER_CERT_PATH: /certs # should contain ca.pem, cert.pem, key.pem
 ```
 
+
 ## 3. Notification messages customization
 
 ### 3.1 Create a custom template
@@ -172,8 +168,6 @@ services:
 1. __Adapt the template:__ download and modify the message strings from [`templates.js`](./templates.js) according to your needs.
 
 2. __Bind your customized file to the container:__
-
-    
 
     using `docker-compose.yaml`
     ```yml
@@ -187,7 +181,7 @@ services:
         environment:
           # ...
     ```
-    using `docker run`:
+    using `docker run`
     ```sh
     docker run -d \
         --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
@@ -198,12 +192,11 @@ services:
         lorcas/docker-telegram-notifier
     ```
 
+
 ### 3.1 Customizing message strings
 ### 3.1.1 Default docker event variables
 
 Here are some variables available to customize the notification messages.
-
-
 
 | Variable | Description |
 | -------- | ----------- |
