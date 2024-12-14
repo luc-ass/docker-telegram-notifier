@@ -4,47 +4,58 @@
 
 This Docker container provides a Telegram integration to notify you about Docker events. It can notify you when a container starts, stops (including details about exit codes), restarts, and when the healthcheck status of a Docker container changes. You have the flexibility to customize these notifications by modifying the `templates.js` file.
 
-This fork was created to address security vulnerabilities and add support for `linux/arm64` and `linux/arm/v7` in addition to `linux/amd64`.
+This fork of the project was created to address security vulnerabilities and add support for `linux/arm64` and `linux/arm/v7`.
 
 If you encounter any issues, please feel free to contribute by fixing them and opening a [pull request](https://github.com/luc-ass/docker-telegram-notifier/pulls) or reporting a new [issue](https://github.com/luc-ass/docker-telegram-notifier/issues).
 
-## 1. Basic setup  
+## 🐳 Run Docker Container
 
-1. Set up a Telegram bot
+1. __Set up a Telegram bot:__ To get started, [create a Telegram bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot) and obtain the `Bot Token`. Optionally add the bot to a group and allow it to post messages. Finally, [extract the Chat ID](https://stackoverflow.com/a/32572159/882223).
 
-    - [create a Telegram bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot) and obtain the Bot Token
-    - optionally add the bot to a group and allow it to post messages
-    - extract the [Chat ID](https://stackoverflow.com/a/32572159/882223)
+2. __Run the container:__
 
-2. Run the container
-
-    __docker-compose.yaml__
-    ```yaml
-    services:
-      telegram-notifier:
-        image: lorcas/docker-telegram-notifier:latest
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock:ro # for local instance
-        environment:
-          TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
-          TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
-    ```
-
-    _or_ __docker run__
+   using `docker run`:
     ```sh
     docker run -d \
-      --env TELEGRAM_NOTIFIER_BOT_TOKEN=<bot_token> \
-      --env TELEGRAM_NOTIFIER_CHAT_ID=<chat_id> \
-      --volume /var/run/docker.sock:/var/run/docker.sock:ro \
-      --hostname my_host \
-      lorcas/docker-telegram-notifier
+        --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
+        --env TELEGRAM_NOTIFIER_CHAT_ID=chat_id \
+        --env TELEGRAM_NOTIFIER_TOPIC_ID=topic_id \
+        --volume /var/run/docker.sock:/var/run/docker.sock:ro \
+        --hostname my_host \
+        lorcas/docker-telegram-notifier
     ```
 
-3. Add a healthcheck to your container (optional)
-   
+    using `docker-compose.yaml`
+    ```yml
+    version: "2.2"
+
+    services:
+      notifier:
+        image: lorcas/docker-telegram-notifier:latest
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock:ro # for local instance
+          # - ./certs:/certs # for remote instance
+        environment:
+          # How to create bot: https://core.telegram.org/bots#3-how-do-i-create-a-bot
+          # How to get chat id: https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id/32572159#32572159
+          TELEGRAM_NOTIFIER_BOT_TOKEN: 
+          TELEGRAM_NOTIFIER_CHAT_ID:
+          # One of the following two can be used, but not both
+          TELEGRAM_NOTIFIER_TOPIC_ID:
+          TELEGRAM_NOTIFIER_THREAD_ID:
+          # optional args
+          # ONLY_WHITELIST: true
+          # DOCKER_HOST: tcp://example.com:2376 # http/https is detected by port number
+          # DOCKER_CERT_PATH: /certs # should contain ca.pem, cert.pem, key.pem
+3. __Add a health-check to your container:__
     ```yaml
     example:
       image: hello-world
+      labels:
+        telegram-notifier.monitor: true  # always monitor
+        telegram-notifier.monitor: false # never monitor
+           # no label = monitor only when not using whitelist
+        # example docker healthcheck
       healthcheck:
         test: curl -sS http://127.0.0.1:8545 || exit 1
         interval: 30s
@@ -52,57 +63,20 @@ If you encounter any issues, please feel free to contribute by fixing them and o
         retries: 3
     ```
 
-This setup will start the container and notify you about Docker events. For more advanced configuration, see the [Advanced setup](#-advanced-setup) section.
+## Blacklist and Whitelist
 
-
-## 2. Advanced setup
-
-### 2.1 Blacklisting
 You can disable notifications from specific containers by adding the label `--label telegram-notifier.monitor=false` to them.
 
+Alternatively you can receive notifications only from whitelisted containers by setting `--env ONLY_WHITELIST=true` on the notifier instance, and `--label telegram-notifier.monitor=true` on the containers you want to monitor.
 
-```yaml
-services:
-  example:
-    image: hello-world
-    labels:
-      telegram-notifier.monitor: false
-```
+## Remote docker instance
 
-```sh
-docker run -d --label telegram-notifier.monitor=false hello-world
-```
+By default notifier connects to a local docker instance (don't forget to specify `--volume /var/run/docker.sock:/var/run/docker.sock:ro` for this case). But if you have monitoring and the service on the same host, you will not receive notifications if the host goes down. So I recommend to have monitoring separately.
 
+Notifier accepts usual `DOCKER_HOST` and `DOCKER_CERT_PATH` environment variables to specify remote instance. For http endpoint you need to specify only `--env DOCKER_HOST=tcp://example.com:2375` (make sure to keep such instances behind the firewall). For https, you'll also need to mount a volume with https certificates that contains `ca.pem`, `cert.pem`, and `key.pem`: `--env DOCKER_HOST=tcp://example.com:2376 --env DOCKER_CERT_PATH=/certs --volume $(pwd):/certs`
+Tutorial on how to generate docker certs can be found [here](https://docs.docker.com/engine/security/https/)
 
-### 2.2 Whitelisting
-
-Alternatively you can receive notifications only from whitelisted containers by setting `--env ONLY_WHITELIST=true` on the notifier instance, and `--label telegram-notifier.monitor=true` on the containers you want to monitor. 
-
-
-
-```yaml
-services:
-  telegram-notifier:
-    image: lorcas/docker-telegram-notifier:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro # for local instance
-    environment:
-      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
-      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
-      ONLY_WHITELIST: true
-
-  example:
-    image: hello-world
-    labels:
-      telegram-notifier.monitor: true
-```
-
-```sh
-docker run -d --label telegram-notifier.monitor=true hello-world
-```
-
-
-### 2.3 Per container notifications
+## Container-Specific Notifications
 
 You can configure different Telegram channels and threads/topics for specific containers using Docker labels:
 
@@ -111,7 +85,7 @@ services:
   example:
     image: hello-world
     labels:
-      # Monitor control if you are using whitelist
+      # Monitor control
       telegram-notifier.monitor: true
 
       # Channel override (optional)
@@ -125,49 +99,12 @@ services:
 If these labels are not specified, the container will use the global settings from the notifier's environment variables.
 
 
-### 2.4 Remote docker instance
-
-By default notifier connects to a local docker instance (don't forget to specify `--volume /var/run/docker.sock:/var/run/docker.sock:ro` for this case). But if you have monitoring and the service on the same host, you will not receive notifications if the host goes down. So I recommend to have monitoring separately.
-
-Notifier accepts usual `DOCKER_HOST` and `DOCKER_CERT_PATH` environment variables to specify remote instance. For http endpoint you need to specify only `--env DOCKER_HOST=tcp://example.com:2375` (make sure to keep such instances behind the firewall). For https, you'll also need to mount a volume with https certificates that contains `ca.pem`, `cert.pem`, and `key.pem`: `--env DOCKER_HOST=tcp://example.com:2376 --env DOCKER_CERT_PATH=/certs --volume $(pwd):/certs`.
-A tutorial on how to generate docker certs can be found [here](https://docs.docker.com/engine/security/https/).
-
-```yaml
-services:
-  telegram-notifier:
-    image: lorcas/docker-telegram-notifier:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro # for local instance
-      - ./certs:/certs # for remote instance
-    environment:
-      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
-      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
-      DOCKER_HOST: tcp://example.com:2376 # http/https is detected by port number
-      DOCKER_CERT_PATH: /certs # should contain ca.pem, cert.pem, key.pem
-```
-
-## 3. Notification messages customization
-
-### 3.1 Create a custom template
+## Notification messages customization
 
 1. __Adapt the template:__ download and modify the message strings from [`templates.js`](./templates.js) according to your needs.
 
 2. __Bind your customized file to the container:__
 
-    
-
-    using `docker-compose.yaml`
-    ```yml
-    services:
-      notifier:
-        image: lorcas/docker-telegram-notifier:latest
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock:ro
-          # Bind customized file to /templates/* in the container:
-          - ./my-template.js:/usr/src/app/templates.js:ro
-        environment:
-          # ...
-    ```
     using `docker run`:
     ```sh
     docker run -d \
@@ -179,11 +116,32 @@ services:
         lorcas/docker-telegram-notifier
     ```
 
-### 3.1 Customizing message strings
-### 3.1.1 Default docker event variables
+    or using `docker-compose.yaml`
+    ```yml
+    services:
+      notifier:
+        image: lorcas/docker-telegram-notifier:latest
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock:ro
+          # Bind customized file to /templates/* in the container:
+          - ./my-template.js:/usr/src/app/templates.js:ro
+        environment:
+          # ...
+
+### Customizing message strings
+#### Default supported docker event variables
 
 Here are some variables available to customize the notification messages.
 
+<details>
+<summary>Example customized message</summary>
+
+```js
+container_start: e =>
+        `&#9989; ${e.Actor.Attributes['com.docker.compose.project']} <b>${e.Actor.Attributes['com.docker.compose.service']}</b> is UP!\n` +
+        `<pre>${e.Actor.Attributes.image}</pre>`,
+```
+</details>
 
 
 | Variable | Description |
@@ -191,14 +149,6 @@ Here are some variables available to customize the notification messages.
 | `${e.Actor.Attributes.name}` | Docker container Name |
 | `${e.Actor.Attributes.container}` | Docker container ID |
 | `${e.Actor.Attributes.image}` | Docker container Image used |
-
-```js
-container_start: e =>
-        `&#9989; ${e.Actor.Attributes['com.docker.compose.project']} <b>${e.Actor.Attributes['com.docker.compose.service']}</b> is UP!\n` +
-        `<pre>${e.Actor.Attributes.image}</pre>`,
-```
-
-### 3.1.2 Docker Compose variables
 
 The following variables are only available if the container was started using `docker compose`
 | Variable | Description |
@@ -208,26 +158,11 @@ The following variables are only available if the container was started using `d
 | `${e.Actor.Attributes['com.docker.compose.service']}` | Compose Service Name |
 | `${e.Actor.Attributes['com.docker.compose.version']}` | Compose Version |
 
-### 3.1.3 Custom container information in Telegram notifications
+#### Custom container information in Telegram notifications
 
 Leverage the `labels:` defintion on docker services to make custom information available to notification messages:
 
 1. __Add custom labels to a container:__
-
-    
-
-    using `docker-compose.yaml`
-    ```yml
-    services:
-      example:
-        image: hello-world
-        labels:
-          # Monitor control
-          telegram-notifier.monitor: true
-
-          # Custom defined labels and information
-          mycustom.telegram.container-info: "Access via http://myhost.com/"
-    ```
 
     using `docker run`:
     ```sh
@@ -238,7 +173,19 @@ Leverage the `labels:` defintion on docker services to make custom information a
     ```
 
 
-2. __Adapt your customized messages template:__
+    or using `docker-compose.yaml`
+    ```yml
+    services:
+      example:
+        image: hello-world
+        labels:
+          # Monitor control
+          telegram-notifier.monitor: true
+
+          # Custom defined labels and information
+          mycustom.telegram.container-info: "Access via http://myhost.com/"
+
+2. __And adapt your customized messages template:__
     ```js
     container_start: e =>
             `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n${e.Actor.Attributes.image}\n` +
