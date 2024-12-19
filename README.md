@@ -69,7 +69,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
     example:
       image: hello-world
       healthcheck:
-        test: curl -sS http://127.0.0.1:8545 || exit 1
+        test: ["CMD", "curl", "-sS", "http://127.0.0.1:8545", "||", "exit", "1"]
         interval: 30s
         timeout: 10s
         retries: 3
