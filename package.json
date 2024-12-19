@@ -1,6 +1,6 @@
 {
   "name": "docker-telegram-notifier",
-  "version": "1.0.0",
+  "version": "1.4.2",
   "description": "Telegram integration for notifying Docker events",
   "repository": {
     "type": "git",
