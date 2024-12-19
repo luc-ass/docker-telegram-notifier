@@ -33,7 +33,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},enable=${{ !contains(github.ref, '-beta') }}
             type=semver,pattern={{major}},enable=${{ !contains(github.ref, '-beta') }}
             # Add specific handling for beta versions
-            type=match,pattern=v\d+\.\d+\.\d+-beta\.\d+,group=0
+            type=match,pattern=\d+\.\d+\.\d+-beta\.\d+,group=0
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
