@@ -1,9 +1,13 @@
 module.exports = {
     connection_message: ({hostname, version, os, type, architecture, cpu, memory}) =>
-        `Connected to docker v${version} on ${hostname}\nOS: ${type}/${architecture} (${os}), ${cpu} CPU, ${memory} RAM`,
+        `Connected to <b>${hostname}</b> (docker v${version})\n` +
+        `OS: ${type}/${architecture} (${os})\n` +
+        `CPU: ${cpu} Cores\n` +
+        `RAM: ${memory}`,
 
     container_start: e =>
-        `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n${e.Actor.Attributes.image}`,
+        `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n` +
+        `Image: <code>${e.Actor.Attributes.image}</code>`,
 
     container_die: e => {
         const exitCode = e.Actor.Attributes.exitCode;
@@ -27,17 +31,25 @@ module.exports = {
         }
 
         if (exitCode in normalMap) {
-            return `&#9209;&#65039; <b>${e.Actor.Attributes.name}</b> stopped!\n${e.Actor.Attributes.image}\n${normalMap[exitCode]}`;
+            return `&#9209;&#65039; <b>${e.Actor.Attributes.name}</b> stopped!\n` +
+            `Image: <code>${e.Actor.Attributes.image}</code>\n` +
+            `${normalMap[exitCode]}`;
         } else if (exitCode in nonNormalMap) {
-            return `&#128308; <b>${e.Actor.Attributes.name}</b> stopped!\n${e.Actor.Attributes.image}\n${nonNormalMap[exitCode]}`;
+            return `&#128308; <b>${e.Actor.Attributes.name}</b> stopped!\n` +
+            `Image: <code>${e.Actor.Attributes.image}</code>\n` +
+            `${nonNormalMap[exitCode]}`;
         } else {
-            return `&#128308; <b>${e.Actor.Attributes.name}</b> stopped with exit code (${exitCode})!\n${e.Actor.Attributes.image}`;
+            return `&#128308; <b>${e.Actor.Attributes.name}</b> stopped!\n` +
+            `Image: <code>${e.Actor.Attributes.image}</code>\n` +
+            `Exit code: ${exitCode}`;
         }
     },
 
     'container_health_status: healthy': e =>
-        `&#9989; <b>${e.Actor.Attributes.name}</b> healthy\n${e.Actor.Attributes.image}`,
+        `&#9989; <b>${e.Actor.Attributes.name}</b> healthy\n` +
+        `Image: <code>${e.Actor.Attributes.image}</code>`,
 
     'container_health_status: unhealthy': e =>
-        `&#9888; <b>${e.Actor.Attributes.name}</b> unhealthy!\n${e.Actor.Attributes.image}`,
+        `&#9888; <b>${e.Actor.Attributes.name}</b> unhealthy!\n` +
+        `Image: <code>${e.Actor.Attributes.image}</code>`,
 };
