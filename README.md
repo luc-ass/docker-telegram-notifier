@@ -6,7 +6,10 @@
 
 This Docker container provides a Telegram integration to notify you about Docker events. It can notify you when a container starts, stops (including details about exit codes), restarts, and when the healthcheck status of a Docker container changes. You have the flexibility to customize these notifications by modifying the `templates.js` file.
 
-This fork was created to address security vulnerabilities and add support for `linux/arm64` and `linux/arm/v7` in addition to `linux/amd64`.
+This fork was created to address security vulnerabilities and add support for 
+- `linux/arm64` and
+- `linux/arm/v7` in addition to
+- `linux/amd64`.
 
 If you encounter any issues, please feel free to contribute by fixing them and opening a [pull request](https://github.com/luc-ass/docker-telegram-notifier/pulls) or reporting a new [issue](https://github.com/luc-ass/docker-telegram-notifier/issues).
 
