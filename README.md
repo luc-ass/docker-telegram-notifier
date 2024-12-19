@@ -17,10 +17,11 @@ If you encounter any issues, please feel free to contribute by fixing them and o
 ## Table of contents
 - [1. Basic setup](#1-basic-setup)
 - [2. Advanced setup](#2-advanced-setup)
-  - [2.1 Blacklisting](#21-blacklisting)
-  - [2.2 Whitelisting](#22-whitelisting)
-  - [2.3 Per container notifications](#23-per-container-notifications)
-  - [2.4 Remote docker instance](#24-remote-docker-instance)
+  - [2.1 Telegram Topic/Thread](#21-telegram-topicthread)
+  - [2.2 Blacklisting](#22-blacklisting)
+  - [2.3 Whitelisting](#23-whitelisting)
+  - [2.4 Per container notifications](#24-per-container-notifications)
+  - [2.5 Remote docker instance](#25-remote-docker-instance)
 - [3. Notification messages customization](#3-notification-messages-customization)
   - [3.1 Create a custom template](#31-create-a-custom-template)
   - [3.1 Customizing message strings](#31-customizing-message-strings)
@@ -79,7 +80,22 @@ This setup will start the container and notify you about Docker events. For more
 
 ## 2. Advanced setup
 
-### 2.1 Blacklisting
+### 2.1 Telegram Topic/Thread
+
+You can use either `TELEGRAM_NOTIFIER_TOPIC_ID` or `TELEGRAM_NOTIFIER_THREAD_ID` to send notifications to a specific Telegram topic or thread.
+
+```yaml
+services:
+  telegram-notifier:
+    image: lorcas/docker-telegram-notifier:latest
+    environment:
+      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
+      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
+      TELEGRAM_NOTIFIER_TOPIC_ID: <topic_id> # optional use only one
+      TELEGRAM_NOTIFIER_THREAD_ID: <thread_id> # optional use only one
+```
+
+### 2.2 Blacklisting
 You can disable notifications from specific containers by adding the label `--label telegram-notifier.monitor=false` to them.
 
 
@@ -95,7 +111,7 @@ services:
 docker run -d --label telegram-notifier.monitor=false hello-world
 ```
 
-### 2.2 Whitelisting
+### 2.3 Whitelisting
 
 Alternatively you can receive notifications only from whitelisted containers by setting `--env ONLY_WHITELIST=true` on the notifier instance, and `--label telegram-notifier.monitor=true` on the containers you want to monitor. 
 
@@ -120,7 +136,7 @@ services:
 docker run -d --label telegram-notifier.monitor=true hello-world
 ```
 
-### 2.3 Per container notifications
+### 2.4 Per container notifications
 
 You can configure different Telegram channels and threads/topics for specific containers using Docker labels:
 
@@ -143,7 +159,7 @@ services:
 If these labels are not specified, the container will use the global settings from the notifier's environment variables.
 
 
-### 2.4 Remote docker instance
+### 2.5 Remote docker instance
 
 By default notifier connects to a local docker instance (don't forget to specify `--volume /var/run/docker.sock:/var/run/docker.sock:ro` for this case). But if you have monitoring and the service on the same host, you will not receive notifications if the host goes down. So I recommend to have monitoring separately.
 
