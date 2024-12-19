@@ -1,3 +1,8 @@
 /.github
 /.vscode
 /node_modules
+.gitignore
+docker-compose.yml
+Dockerfile*
+README*
+renovate.json
