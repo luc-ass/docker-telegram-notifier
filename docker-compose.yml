@@ -23,7 +23,7 @@ services:
 #       # no label = monitor only when not using whitelist
 #    # example docker healthcheck
 #    healthcheck:
-#      test: curl -sS http://127.0.0.1:8545 || exit 1
+#      test: ["CMD", "curl", "-sS", "http://127.0.0.1:8545", "||", "exit", "1"]
 #      interval: 30s
 #      timeout: 10s
 #      retries: 3
