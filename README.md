@@ -17,7 +17,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
 ## Table of contents
 - [1. Basic setup](#1-basic-setup)
 - [2. Advanced setup](#2-advanced-setup)
-  - [2.1 Telegram Topic/Thread](#21-telegram-topicthread)
+  - [2.1 Topics and Threads](#21-topics-and-threads)
   - [2.2 Blacklisting](#22-blacklisting)
   - [2.3 Whitelisting](#23-whitelisting)
   - [2.4 Per container notifications](#24-per-container-notifications)
@@ -33,13 +33,13 @@ If you encounter any issues, please feel free to contribute by fixing them and o
 
 ## 1. Basic setup  
 
-1. Set up a Telegram bot
+1. **Set up a Telegram bot**
 
     - [create a Telegram bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot) and obtain the Bot Token
     - optionally add the bot to a group and allow it to post messages
     - extract the [Chat ID](https://stackoverflow.com/a/32572159/882223)
 
-2. Run the container
+2. **Run the container**
 
     using `docker-compose.yaml`
     ```yaml
@@ -53,7 +53,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
           TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
     ```
 
-    _or_ using `docker run`
+    using `docker run`
     ```sh
     docker run -d \
       --env TELEGRAM_NOTIFIER_BOT_TOKEN=<bot_token> \
@@ -63,7 +63,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
       lorcas/docker-telegram-notifier
     ```
 
-3. Add a healthcheck to your container (optional)
+3. **Add a healthcheck to your container** (optional)
    
     ```yaml
     example:
@@ -80,23 +80,22 @@ This setup will start the container and notify you about Docker events. For more
 
 ## 2. Advanced setup
 
-### 2.1 Telegram Topic/Thread
+The following options are available to customize the behavior of the notifier. Examples are provided for `docker-compose.yaml` but are also applicable to `docker run`. Only the changes are shown, make sure to include the rest from the [Basic setup](#1-basic-setup) section.
 
-You can use either `TELEGRAM_NOTIFIER_TOPIC_ID` or `TELEGRAM_NOTIFIER_THREAD_ID` to send notifications to a specific Telegram topic or thread.
+### 2.1 Topics and Threads
+
+Use `TELEGRAM_NOTIFIER_TOPIC_ID` or `TELEGRAM_NOTIFIER_THREAD_ID` for specific topics/threads:
 
 ```yaml
 services:
   telegram-notifier:
-    image: lorcas/docker-telegram-notifier:latest
     environment:
-      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
-      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
       TELEGRAM_NOTIFIER_TOPIC_ID: <topic_id> # optional use only one
       TELEGRAM_NOTIFIER_THREAD_ID: <thread_id> # optional use only one
 ```
 
 ### 2.2 Blacklisting
-You can disable notifications from specific containers by adding the label `--label telegram-notifier.monitor=false` to them.
+Disable notifications for specific containers:
 
 
 ```yaml
@@ -107,23 +106,25 @@ services:
       telegram-notifier.monitor: false
 ```
 
+<details>
+<summary>
+docker run
+</summary>
+
 ```sh
 docker run -d --label telegram-notifier.monitor=false hello-world
 ```
+</details>
+
 
 ### 2.3 Whitelisting
 
-Alternatively you can receive notifications only from whitelisted containers by setting `--env ONLY_WHITELIST=true` on the notifier instance, and `--label telegram-notifier.monitor=true` on the containers you want to monitor. 
+Receive notifications only from whitelisted containers by setting `ONLY_WHITELIST=true` and labeling desired containers:
 
 ```yaml
 services:
   telegram-notifier:
-    image: lorcas/docker-telegram-notifier:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro # for local instance
     environment:
-      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
-      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
       ONLY_WHITELIST: true
 
   example:
@@ -131,32 +132,41 @@ services:
     labels:
       telegram-notifier.monitor: true
 ```
+<details>
+<summary>
+docker run
+</summary>
 
 ```sh
 docker run -d --label telegram-notifier.monitor=true hello-world
 ```
+</details>
 
 ### 2.4 Per container notifications
 
-You can configure different Telegram channels and threads/topics for specific containers using Docker labels:
+Configure different channels/threads per container:
 
 ```yaml
 services:
   example:
     image: hello-world
     labels:
-      # Monitor control if you are using whitelist
-      telegram-notifier.monitor: true
-
       # Channel override (optional)
       telegram-notifier.chat-id: "-100123456789"
-
       # Thread/Topic override (optional - use only one)
       telegram-notifier.topic-id: "12345"
       telegram-notifier.thread-id: "12345"
 ```
 
-If these labels are not specified, the container will use the global settings from the notifier's environment variables.
+<details>
+<summary>
+docker run
+</summary>
+
+```sh
+docker run -d --label telegram-notifier.chat-id=-100123456789 --label telegram-notifier.topic-id=12345 hello-world
+```
+</details>
 
 
 ### 2.5 Remote docker instance
@@ -169,13 +179,11 @@ A tutorial on how to generate docker certs can be found [here](https://docs.dock
 ```yaml
 services:
   telegram-notifier:
-    image: lorcas/docker-telegram-notifier:latest
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro # for local instance
+      # disable for remote ONLY monitoring
+      # - /var/run/docker.sock:/var/run/docker.sock:ro 
       - ./certs:/certs # for remote instance
     environment:
-      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
-      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
       DOCKER_HOST: tcp://example.com:2376 # http/https is detected by port number
       DOCKER_CERT_PATH: /certs # should contain ca.pem, cert.pem, key.pem
 ```
@@ -190,18 +198,21 @@ services:
 2. __Bind your customized file to the container:__
 
     using `docker-compose.yaml`
-    ```yml
+    ```yaml
     services:
       notifier:
-        image: lorcas/docker-telegram-notifier:latest
         volumes:
-          - /var/run/docker.sock:/var/run/docker.sock:ro
-          # Bind customized file to /templates/* in the container:
+          # Bind customized file to templates.js in the container:
           - ./my-template.js:/usr/src/app/templates.js:ro
         environment:
           # ...
     ```
-    using `docker run`
+
+    <details>
+    <summary>
+    docker run
+    </summary>
+
     ```sh
     docker run -d \
         --env TELEGRAM_NOTIFIER_BOT_TOKEN=token \
@@ -211,7 +222,7 @@ services:
         --hostname my_host \
         lorcas/docker-telegram-notifier
     ```
-
+    </details>
 
 ### 3.1 Customizing message strings
 
@@ -221,14 +232,24 @@ Here are some variables available to customize the notification messages.
 
 | Variable | Description |
 | :-------- | :----------- |
-| `${e.Actor.Attributes.name}` | Docker container Name |
-| `${e.Actor.Attributes.container}` | Docker container ID |
-| `${e.Actor.Attributes.image}` | Docker container Image used |
+| `${e.Actor.Attributes.name}` | Container name |
+| `${e.Actor.Attributes.container}` | Container ID |
+| `${e.Actor.Attributes.image}` | Container image used |
+| `${e.Actor.Attirbutes.exitCode}` | Container exit code |
 
+Example:
 ```js
 container_start: e =>
-        `&#9989; ${e.Actor.Attributes['com.docker.compose.project']} <b>${e.Actor.Attributes['com.docker.compose.service']}</b> is UP!\n` +
-        `<pre>${e.Actor.Attributes.image}</pre>`,
+    `&#9989; Container Started\n` +
+    `Name: <b>${e.Actor.Attributes.name}</b>\n` +
+    `Image: <code>${e.Actor.Attributes.image}</code>\n` +
+    `ID: <code>${e.Actor.Attributes.container}</code>`
+```
+```
+🟢 Container Started
+Name: my-container
+Image: nginx:latest
+ID: abc123def456
 ```
 
 
@@ -242,6 +263,22 @@ The following variables are only available if the container was started using `d
 | `${e.Actor.Attributes['com.docker.compose.service']}` | Compose Service Name |
 | `${e.Actor.Attributes['com.docker.compose.version']}` | Compose Version |
 
+Example:
+```js
+container_start: e =>
+    `&#9989; Container Started\n` +
+    `Project: <b>${e.Actor.Attributes['com.docker.compose.project']}</b>\n` +
+    `Service: <b>${e.Actor.Attributes['com.docker.compose.service']}</b> (#${e.Actor.Attributes['com.docker.compose.container-number']})\n` +
+    `Image: <code>${e.Actor.Attributes.image}</code>\n` +
+    `Compose Version: <code>${e.Actor.Attributes['com.docker.compose.version']}<code>`
+```
+```
+🟢 Container Started
+Project: myproject
+Service: webserver (#1)
+Image: nginx:latest
+Compose Version: 2.17.2
+```
 
 ### 3.1.3 Custom container information in Telegram notifications
 
@@ -250,14 +287,13 @@ Leverage the `labels:` defintion on docker services to make custom information a
 1. __Add custom labels to a container:__
 
     using `docker-compose.yaml`
-    ```yml
+    ```yaml
     services:
       example:
         image: hello-world
         labels:
           # Monitor control
           telegram-notifier.monitor: true
-
           # Custom defined labels and information
           mycustom.telegram.container-info: "Access via http://myhost.com/"
     ```
@@ -274,9 +310,13 @@ Leverage the `labels:` defintion on docker services to make custom information a
 2. __Adapt your customized messages template:__
     ```js
     container_start: e =>
-            `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n${e.Actor.Attributes.image}\n` +
-            (${e.Actor.Attributes['mycustom.telegram.container-info']} ? `NOTE: ${e.Actor.Attributes['mycustom.telegram.container-info']}` : '')
-            // if-else prevents the message from failing when custom info is not passed
+            `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n` +
+            `Image: <code>${e.Actor.Attributes.image}</code>\n` +
+            (
+              ${e.Actor.Attributes['mycustom.telegram.container-info']} ?
+              `NOTE: ${e.Actor.Attributes['mycustom.telegram.container-info']}` :
+              ''
+            )
     ```
 
 ## Credits
