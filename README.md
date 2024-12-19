@@ -24,10 +24,10 @@ If you encounter any issues, please feel free to contribute by fixing them and o
   - [2.5 Remote docker instance](#25-remote-docker-instance)
 - [3. Notification messages customization](#3-notification-messages-customization)
   - [3.1 Create a custom template](#31-create-a-custom-template)
-  - [3.1 Customizing message strings](#31-customizing-message-strings)
-  - [3.1.1 Default docker event variables](#311-default-docker-event-variables)
-  - [3.1.2 Docker Compose variables](#312-docker-compose-variables)
-  - [3.1.3 Custom container information in Telegram notifications](#313-custom-container-information-in-telegram-notifications)
+  - [3.2 Customizing message strings](#32-customizing-message-strings)
+  - [3.2.1 Default docker event variables](#321-default-docker-event-variables)
+  - [3.2.2 Docker Compose variables](#322-docker-compose-variables)
+  - [3.2.3 Custom container information in Telegram notifications](#323-custom-container-information-in-telegram-notifications)
 - [Credits](#credits)
 
 
@@ -224,9 +224,9 @@ services:
     ```
     </details>
 
-### 3.1 Customizing message strings
+### 3.2 Customizing message strings
 
-### 3.1.1 Default docker event variables
+### 3.2.1 Default docker event variables
 
 Here are some variables available to customize the notification messages.
 
@@ -253,7 +253,7 @@ ID: abc123def456
 ```
 
 
-### 3.1.2 Docker Compose variables
+### 3.2.2 Docker Compose variables
 
 The following variables are only available if the container was started using `docker compose`
 | Variable | Description |
@@ -280,7 +280,7 @@ Image: nginx:latest
 Compose Version: 2.17.2
 ```
 
-### 3.1.3 Custom container information in Telegram notifications
+### 3.2.3 Custom container information in Telegram notifications
 
 Leverage the `labels:` defintion on docker services to make custom information available to notification messages:
 
