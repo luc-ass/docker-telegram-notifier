@@ -1,10 +1,10 @@
 {
   "name": "docker-telegram-notifier",
   "version": "1.4.2",
-  "description": "Telegram integration for notifying Docker events",
+  "description": "Docker container to inform you about docker-events via telegram",
   "repository": {
     "type": "git",
-    "url": "https://github.com/poma/docker-telegram-notifier"
+    "url": "https://github.com/luc-ass/docker-telegram-notifier"
   },
   "main": "app.js",
   "scripts": {
