@@ -28,6 +28,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
   - [3.2.1 Default docker event variables](#321-default-docker-event-variables)
   - [3.2.2 Docker Compose variables](#322-docker-compose-variables)
   - [3.2.3 Custom container information in Telegram notifications](#323-custom-container-information-in-telegram-notifications)
+- [4. Proxy](#4-proxy)
 - [Credits](#credits)
 
 
@@ -318,6 +319,21 @@ Leverage the `labels:` defintion on docker services to make custom information a
           ''
         )
     ```
+
+## 4. Proxy
+
+If you need to use a proxy to access the Telegram API, you can set the `HTTPS_PROXY` environment variables, like below:
+
+```sh
+docker run -d \
+  --env TELEGRAM_NOTIFIER_BOT_TOKEN=<bot_token> \
+  --env TELEGRAM_NOTIFIER_CHAT_ID=<chat_id> \
+  --env HTTPS_PROXY=http://proxy.example.com:8080 \
+  --volume /var/run/docker.sock:/var/run/docker.sock:ro \
+  --hostname my_host \
+  lorcas/docker-telegram-notifier
+```
+
 
 ## Credits
 
