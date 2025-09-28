@@ -2,3 +2,5 @@
 /node_modules
 *BAK*
 *BAK.*
+
+.DS_store
