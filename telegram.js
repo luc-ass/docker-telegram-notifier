@@ -18,6 +18,9 @@ class TelegramClient {
     const threadId = overrides.threadId || this.threadId;
     if (threadId) {
       options.message_thread_id = parseInt(threadId);
+      if (overrides.threadIsTopic) {
+        options.is_topic_message = true;
+      }
     }
 
     const chatId = overrides.chatId || process.env.TELEGRAM_NOTIFIER_CHAT_ID;
