@@ -11,11 +11,11 @@ async function sendEvent(event) {
   const template = templates[`${event.Type}_${event.Action}`];
   if (template) {
     const attributes = event.Actor?.Attributes || {};
-    
+
     // Check monitoring status
     const monitorLabel = attributes['telegram-notifier.monitor'];
-    const shouldMonitor = monitorLabel === undefined ? 
-      undefined : 
+    const shouldMonitor = monitorLabel === undefined ?
+      undefined :
       monitorLabel.toLowerCase().trim() !== 'false';
 
     if (shouldMonitor || !ONLY_WHITELIST && shouldMonitor !== false) {
@@ -29,9 +29,14 @@ async function sendEvent(event) {
       }
 
       // Only add threadId if explicitly set via label
-      const labelThreadId = attributes['telegram-notifier.topic-id'] || 
-                            attributes['telegram-notifier.thread-id'];
-      if (labelThreadId) {
+      const labelTopicId = attributes['telegram-notifier.topic-id'];
+      const labelThreadId = attributes['telegram-notifier.thread-id'];
+      if (labelTopicId) {
+        // Topic ID: set is_topic_message=true for Telegram Groups with Topics enabled
+        overrides.threadId = labelTopicId;
+        overrides.threadIsTopic = true;
+      } else if (labelThreadId) {
+        // Thread ID: don't set is_topic_message flag
         overrides.threadId = labelThreadId;
       }
 
