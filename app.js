@@ -31,13 +31,31 @@ async function sendEvent(event) {
       // Only add threadId if explicitly set via label
       const labelTopicId = attributes['telegram-notifier.topic-id'];
       const labelThreadId = attributes['telegram-notifier.thread-id'];
-      if (labelTopicId) {
-        // Topic ID: set is_topic_message=true for Telegram Groups with Topics enabled
-        overrides.threadId = labelTopicId;
-        overrides.threadIsTopic = true;
-      } else if (labelThreadId) {
-        // Thread ID: don't set is_topic_message flag
-        overrides.threadId = labelThreadId;
+      // topic-id label exists - check if it's explicitly disabled
+      if (labelTopicId !== undefined) {
+        const isDisabled = labelTopicId === '' ||
+                           labelTopicId.toLowerCase() === 'false' ||
+                           labelTopicId === '0';
+        // Explicitly set to empty to disable thread/topic
+        if (isDisabled) {
+          overrides.threadId = '';
+        }
+        // Valid topic-id provided
+        else {
+          overrides.threadId = labelTopicId;
+          overrides.threadIsTopic = true;
+        }
+      }
+      // thread-id label exists - check if it's explicitly disabled
+      else if (labelThreadId !== undefined) {
+        const isDisabled = labelThreadId === '' ||
+                           labelThreadId.toLowerCase() === 'false' ||
+                           labelThreadId === '0';
+        if (isDisabled) {
+          overrides.threadId = '';
+        } else {
+          overrides.threadId = labelThreadId;
+        }
       }
 
       const attachment = template(event);

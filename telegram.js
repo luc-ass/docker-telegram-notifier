@@ -15,7 +15,12 @@ class TelegramClient {
       disable_web_page_preview: true
     };
 
-    const threadId = overrides.threadId || this.threadId;
+    // Check if threadId was explicitly provided in overrides (even if empty)
+    const threadId = 'threadId' in overrides
+      ? overrides.threadId
+      : this.threadId;
+
+    // Only set message_thread_id if threadId has a truthy value
     if (threadId) {
       options.message_thread_id = parseInt(threadId);
       if (overrides.threadIsTopic) {

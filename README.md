@@ -6,7 +6,7 @@
 
 This Docker container provides a Telegram integration to notify you about Docker events. It can notify you when a container starts, stops (including details about exit codes), restarts, and when the healthcheck status of a Docker container changes. You have the flexibility to customize these notifications by [modifying the `templates.js` file](#3-notification-messages-customization).
 
-This fork was created to address security vulnerabilities and add support for 
+This fork was created to address security vulnerabilities and add support for
 - `linux/arm64` and
 - `linux/arm/v7` in addition to
 - `linux/amd64`.
@@ -31,7 +31,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
 - [Credits](#credits)
 
 
-## 1. Basic setup  
+## 1. Basic setup
 
 1. **Set up a Telegram bot**
 
@@ -64,7 +64,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
     ```
 
 3. **Add a healthcheck to your container** (optional)
-   
+
     ```yaml
     example:
       image: hello-world
@@ -155,8 +155,15 @@ services:
       telegram-notifier.chat-id: "-100123456789"
       # Thread/Topic override (optional - use only one)
       telegram-notifier.topic-id: "12345"
+      #                         : "false" # would explicitely override to use NONE
       telegram-notifier.thread-id: "12345"
+      #                          : "" # would also explicitely override to use NONE
 ```
+
+> [!IMPORTANT]
+> When leaving away a `.topic-id` / `.thread-id` label, but having one defined globally as per [Topics and Threads](#21-topics-and-threads), then that will be **used automatically as fallback**.
+> If that is unintended, you have to explicitely set the label to EMPTY (or `false`).
+> - Example scenario: when for example the per container `chat-id` differs from the global, and has NO Topics / Threads support.
 
 <details>
 <summary>
@@ -181,7 +188,7 @@ services:
   telegram-notifier:
     volumes:
       # disable for remote ONLY monitoring
-      # - /var/run/docker.sock:/var/run/docker.sock:ro 
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs:/certs # for remote instance
     environment:
       DOCKER_HOST: tcp://example.com:2376 # http/https is detected by port number
