@@ -1,7 +1,9 @@
+/.git
 /.github
 /.vscode
 /node_modules
 .gitignore
+.DS_Store
 docker-compose.yml
 Dockerfile*
 README*
