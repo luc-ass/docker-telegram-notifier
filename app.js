@@ -1,3 +1,6 @@
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const Docker = require('dockerode');
 const TelegramClient = require('./telegram');
 const JSONStream = require('JSONStream');
@@ -7,10 +10,20 @@ const { ONLY_WHITELIST } = process.env;
 const docker = new Docker();
 const telegram = new TelegramClient();
 
+// The healthcheck runs as its own process and cannot see the state of the
+// event loop, so the listener leaves a heartbeat file behind instead. It is
+// refreshed while the stream is connected and the daemon answers, and goes
+// stale as soon as either stops being true.
+const HEARTBEAT_FILE = process.env.TELEGRAM_NOTIFIER_HEARTBEAT_FILE ||
+  path.join(os.tmpdir(), 'docker-telegram-notifier.heartbeat');
+const HEARTBEAT_INTERVAL_MS = 30000;
+const HEARTBEAT_MAX_AGE_MS = 90000;
+
 const RECONNECT_MIN_MS = 1000;
 const RECONNECT_MAX_MS = 60000;
 
 let stream = null;
+let heartbeatTimer = null;
 let reconnectTimer = null;
 let reconnectDelay = RECONNECT_MIN_MS;
 let shuttingDown = false;
@@ -86,9 +99,40 @@ function isNewEvent(event) {
   return true;
 }
 
+function writeHeartbeat() {
+  try {
+    fs.writeFileSync(HEARTBEAT_FILE, String(Date.now()));
+  } catch (e) {
+    console.error("Could not write the heartbeat file:", e.message);
+  }
+}
+
+function startHeartbeat() {
+  stopHeartbeat();
+  writeHeartbeat();
+  heartbeatTimer = setInterval(async () => {
+    try {
+      // An open stream is not proof on its own — a half-open socket still
+      // looks connected from here. Ask the daemon before refreshing.
+      await docker.ping();
+      writeHeartbeat();
+    } catch (e) {
+      console.error("Docker did not answer, heartbeat not refreshed:", e.message);
+    }
+  }, HEARTBEAT_INTERVAL_MS);
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
 function scheduleReconnect(reason) {
   if (shuttingDown || reconnectTimer) return;
 
+  stopHeartbeat();
   if (stream) {
     stream.destroy();
     stream = null;
@@ -114,6 +158,7 @@ async function connectEventStream() {
 
   stream = await docker.getEvents(options);
   reconnectDelay = RECONNECT_MIN_MS;
+  startHeartbeat();
   console.log(lastEventTime === null ?
     "Listening for docker events." :
     `Listening for docker events again, replaying from ${lastEventTime}.`);
@@ -137,7 +182,13 @@ function shutdown(signal) {
   console.log(`Received ${signal}, shutting down.`);
 
   if (reconnectTimer) clearTimeout(reconnectTimer);
+  stopHeartbeat();
   if (stream) stream.destroy();
+  try {
+    fs.unlinkSync(HEARTBEAT_FILE);
+  } catch (e) {
+    // Nothing to clean up.
+  }
   process.exit(0);
 }
 
@@ -173,6 +224,15 @@ async function main() {
   }
 }
 
+function heartbeatAge() {
+  try {
+    const written = Number.parseInt(fs.readFileSync(HEARTBEAT_FILE, 'utf8').trim(), 10);
+    return Number.isSafeInteger(written) ? Date.now() - written : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function healthcheck() {
   try {
     await docker.version();
@@ -180,6 +240,21 @@ async function healthcheck() {
     console.error(e);
     console.error("Docker is unavailable");
     process.exit(101);
+  }
+
+  // Reaching the daemon is not the same as still listening to it. The stream
+  // can end while the daemon stays up, and that is the failure that used to
+  // go unnoticed.
+  const age = heartbeatAge();
+  if (age === null) {
+    console.error(`No heartbeat at ${HEARTBEAT_FILE}`);
+    console.error("Not listening for docker events");
+    process.exit(103);
+  }
+  if (age > HEARTBEAT_MAX_AGE_MS) {
+    console.error(`Heartbeat is ${Math.round(age / 1000)}s old, expected at most ${HEARTBEAT_MAX_AGE_MS / 1000}s`);
+    console.error("Not listening for docker events");
+    process.exit(103);
   }
 
   try {
