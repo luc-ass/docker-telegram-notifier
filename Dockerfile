@@ -8,8 +8,14 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 COPY package.json package-lock.json /usr/src/app/
-RUN npm install && npm cache clean --force
+# ci installs exactly what the lockfile says and fails if the two disagree;
+# install may rewrite it, which makes the build unreproducible.
+RUN npm ci --omit=dev && npm cache clean --force
 COPY . /usr/src/app
 
-HEALTHCHECK CMD ["npm", "run", "healthcheck"]
+# The interval is spelled out because the healthcheck depends on it: it fails
+# when the listener's heartbeat is older than 90 seconds, which only leaves
+# room for a missed refresh if it is asked every 30.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+  CMD ["npm", "run", "healthcheck"]
 CMD ["npm", "run", "start"]
