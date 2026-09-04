@@ -2,3 +2,5 @@
 /node_modules
 *BAK*
 *BAK.*
+lcov.info
+coverage.json

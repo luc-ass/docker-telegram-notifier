@@ -9,3 +9,4 @@ Dockerfile*
 README*
 renovate.json
 /test
+/scripts
