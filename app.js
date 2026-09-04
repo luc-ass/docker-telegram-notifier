@@ -7,7 +7,19 @@ const JSONStream = require('JSONStream');
 const templates = require('./templates');
 const { escapeHtml } = require('./escape');
 
-const { ONLY_WHITELIST } = process.env;
+/**
+ * Environment values are strings, so the plain truthiness check this used to
+ * do turned ONLY_WHITELIST=false into "whitelist on" — the exact opposite of
+ * what the compose file said.
+ */
+function envFlag(value) {
+  if (value === undefined) return false;
+  const flag = String(value).trim().toLowerCase();
+  return flag !== '' && flag !== 'false' && flag !== '0' &&
+         flag !== 'no' && flag !== 'off';
+}
+
+const ONLY_WHITELIST = envFlag(process.env.ONLY_WHITELIST);
 const docker = new Docker();
 const telegram = new TelegramClient();
 

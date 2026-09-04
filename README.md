@@ -125,7 +125,7 @@ docker run -d --label telegram-notifier.monitor=false hello-world
 
 ### 2.3 Whitelisting
 
-Receive notifications only from whitelisted containers by setting `ONLY_WHITELIST=true` and labeling desired containers:
+Receive notifications only from whitelisted containers by setting `ONLY_WHITELIST=true` and labeling desired containers. The variable is off unless set to a value other than `false`, `0`, `no` or `off`:
 
 ```yaml
 services:
