@@ -347,10 +347,27 @@ function handleError(e) {
   telegram.sendError(e).catch(console.error);
 }
 
-checkConfiguration();
+// Only take over the process when run directly, so the tests can import the
+// pure helpers below without starting a listener.
+if (require.main === module) {
+  checkConfiguration();
 
-if (process.argv.includes("healthcheck")) {
-  healthcheck();
-} else {
-  main().catch(handleError);
+  if (process.argv.includes("healthcheck")) {
+    healthcheck();
+  } else {
+    main().catch(handleError);
+  }
 }
+
+module.exports = {
+  envFlag,
+  eventFilters,
+  withEscapedAttributes,
+  isNewEvent,
+  // isNewEvent deliberately keeps its state across calls; the tests need a
+  // way back to a clean slate.
+  resetEventTracking() {
+    lastEventTime = null;
+    handledInLastSecond = new Set();
+  }
+};
