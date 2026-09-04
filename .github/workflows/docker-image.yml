@@ -56,7 +56,9 @@ jobs:
             type=semver,pattern={{version}},value=${{ steps.target.outputs.version }},enable=${{ !contains(steps.target.outputs.version, '-beta') }}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.target.outputs.version }},enable=${{ !contains(steps.target.outputs.version, '-beta') }}
             type=semver,pattern={{major}},value=${{ steps.target.outputs.version }},enable=${{ !contains(steps.target.outputs.version, '-beta') }}
-            type=match,pattern=v\d+\.\d+\.\d+-beta\.\d+,group=0,value=${{ steps.target.outputs.version }}
+            # group 1 drops the leading v, so a beta is tagged 1.6.0-beta.1 and
+            # matches how the stable tags are written.
+            type=match,pattern=v(\d+\.\d+\.\d+-beta\.\d+),group=1,value=${{ steps.target.outputs.version }}
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
