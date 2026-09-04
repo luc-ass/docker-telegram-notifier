@@ -299,10 +299,23 @@ async function healthcheck() {
   process.exit(0);
 }
 
+function checkConfiguration() {
+  const missing = ['TELEGRAM_NOTIFIER_BOT_TOKEN', 'TELEGRAM_NOTIFIER_CHAT_ID']
+    .filter(name => !process.env[name] || process.env[name].trim() === '');
+
+  if (missing.length > 0) {
+    console.error(`Missing required configuration: ${missing.join(', ')}`);
+    console.error('See https://github.com/luc-ass/docker-telegram-notifier#1-basic-setup');
+    process.exit(100);
+  }
+}
+
 function handleError(e) {
   console.error(e);
   telegram.sendError(e).catch(console.error);
 }
+
+checkConfiguration();
 
 if (process.argv.includes("healthcheck")) {
   healthcheck();
