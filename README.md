@@ -11,6 +11,12 @@ This fork was created to address security vulnerabilities and add support for
 - `linux/arm/v7` in addition to
 - `linux/amd64`.
 
+> [!NOTE]
+> The image is built on `node:22-slim` rather than `node:lts-slim`. Node 24 dropped
+> support for 32-bit ARM, so tracking the `lts` tag would silently drop `linux/arm/v7`.
+> Node 22 receives security support until April 2027; `linux/arm/v7` support will be
+> reconsidered before then.
+
 If you encounter any issues, please feel free to contribute by fixing them and opening a [pull request](https://github.com/luc-ass/docker-telegram-notifier/pulls) or reporting a new [issue](https://github.com/luc-ass/docker-telegram-notifier/issues).
 
 <!-- omit in toc -->
