@@ -29,6 +29,7 @@ If you encounter any issues, please feel free to contribute by fixing them and o
   - [2.4 Per container notifications](#24-per-container-notifications)
   - [2.5 Remote docker instance](#25-remote-docker-instance)
   - [2.6 Bot token from a file](#26-bot-token-from-a-file)
+  - [2.7 Outbound proxy](#27-outbound-proxy)
 - [3. Notification messages customization](#3-notification-messages-customization)
   - [3.1 Create a custom template](#31-create-a-custom-template)
   - [3.2 Customizing message strings](#32-customizing-message-strings)
@@ -226,6 +227,40 @@ secrets:
 ```
 
 `TELEGRAM_NOTIFIER_CHAT_ID_FILE` works the same way. A trailing newline in the file is ignored. If the file cannot be read, the container stops immediately with exit code 100 and names the file it tried to open.
+
+
+### 2.7 Outbound proxy
+
+If the host reaches the internet through a proxy, set `HTTPS_PROXY` and the notifier will send its Telegram requests through it:
+
+```yaml
+services:
+  telegram-notifier:
+    image: lorcas/docker-telegram-notifier:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
+      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
+      HTTPS_PROXY: http://proxy.example.com:8080
+```
+
+<details>
+<summary>
+docker run
+</summary>
+
+```sh
+docker run -d \
+  --env TELEGRAM_NOTIFIER_BOT_TOKEN=<bot_token> \
+  --env TELEGRAM_NOTIFIER_CHAT_ID=<chat_id> \
+  --env HTTPS_PROXY=http://proxy.example.com:8080 \
+  --volume /var/run/docker.sock:/var/run/docker.sock:ro \
+  lorcas/docker-telegram-notifier
+```
+</details>
+
+The lowercase `https_proxy` is accepted as well. This only affects the connection to Telegram; the docker socket is not reached over the network. An unusable proxy URL stops the container with exit code 100.
 
 
 ## 3. Notification messages customization
