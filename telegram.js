@@ -1,5 +1,15 @@
 const { Telegram } = require('telegraf');
 
+/**
+ * Telegram expects message_thread_id to be a positive integer. parseInt on a
+ * label like 'general' yields NaN, which is serialised as null and answered
+ * with a 400 that says nothing about the actual mistake.
+ */
+function parseThreadId(value) {
+  const id = Number.parseInt(String(value).trim(), 10);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
 class TelegramClient {
   constructor() {
     this.telegram = new Telegram(process.env.TELEGRAM_NOTIFIER_BOT_TOKEN);
@@ -22,7 +32,15 @@ class TelegramClient {
 
     // Only set message_thread_id if threadId has a truthy value
     if (threadId) {
-      options.message_thread_id = parseInt(threadId);
+      const parsedThreadId = parseThreadId(threadId);
+      if (parsedThreadId === null) {
+        console.error(
+          `Ignoring invalid topic/thread id ${JSON.stringify(threadId)}: ` +
+          `expected a positive integer. Sending to the chat without a topic.`
+        );
+      } else {
+        options.message_thread_id = parsedThreadId;
+      }
     }
 
     const chatId = overrides.chatId || process.env.TELEGRAM_NOTIFIER_CHAT_ID;
