@@ -1,4 +1,5 @@
 const { Telegram } = require('telegraf');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 const { escapeHtml } = require('./escape');
 
 /**
@@ -33,9 +34,29 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * node-fetch, which telegraf sends through, does not read the proxy
+ * environment variables by itself, so the agent has to be built explicitly.
+ * Only when one is actually configured: HttpsProxyAgent throws on an empty or
+ * missing value, which would take the container down for everyone not behind
+ * a proxy.
+ */
+function proxyOptions() {
+  const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
+  if (!proxy) return {};
+
+  try {
+    return { agent: new HttpsProxyAgent(proxy) };
+  } catch (e) {
+    console.error(`HTTPS_PROXY is not a usable URL: ${proxy}`);
+    console.error(e.message);
+    process.exit(100);
+  }
+}
+
 class TelegramClient {
   constructor() {
-    this.telegram = new Telegram(process.env.TELEGRAM_NOTIFIER_BOT_TOKEN);
+    this.telegram = new Telegram(process.env.TELEGRAM_NOTIFIER_BOT_TOKEN, proxyOptions());
     this.queue = Promise.resolve();
     this.queued = 0;
     this.lastSentAt = 0;
