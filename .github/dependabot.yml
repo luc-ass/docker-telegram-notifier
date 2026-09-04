@@ -15,3 +15,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+      # Node 24 dropped 32-bit ARM, so a major bump of the base image silently
+      # breaks the linux/arm/v7 build. Major updates are a deliberate decision
+      # here and have to be made by hand, together with the platforms list in
+      # .github/workflows/docker-image.yml.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
