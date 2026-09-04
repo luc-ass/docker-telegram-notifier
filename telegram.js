@@ -23,9 +23,6 @@ class TelegramClient {
     // Only set message_thread_id if threadId has a truthy value
     if (threadId) {
       options.message_thread_id = parseInt(threadId);
-      if (overrides.threadIsTopic) {
-        options.is_topic_message = true;
-      }
     }
 
     const chatId = overrides.chatId || process.env.TELEGRAM_NOTIFIER_CHAT_ID;

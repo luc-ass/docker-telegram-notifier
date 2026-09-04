@@ -28,34 +28,20 @@ async function sendEvent(event) {
         overrides.chatId = labelChatId;
       }
 
-      // Only add threadId if explicitly set via label
+      // Only add threadId if explicitly set via label. topic-id wins over
+      // thread-id; an empty value, 'false' or '0' turns the globally
+      // configured topic off for this container, which is what you need when
+      // its chat has no topics at all.
       const labelTopicId = attributes['telegram-notifier.topic-id'];
       const labelThreadId = attributes['telegram-notifier.thread-id'];
-      // topic-id label exists - check if it's explicitly disabled
-      if (labelTopicId !== undefined) {
-        const isDisabled = labelTopicId === '' ||
-                           labelTopicId.toLowerCase() === 'false' ||
-                           labelTopicId === '0';
-        // Explicitly set to empty to disable thread/topic
-        if (isDisabled) {
-          overrides.threadId = '';
-        }
-        // Valid topic-id provided
-        else {
-          overrides.threadId = labelTopicId;
-          overrides.threadIsTopic = true;
-        }
-      }
-      // thread-id label exists - check if it's explicitly disabled
-      else if (labelThreadId !== undefined) {
-        const isDisabled = labelThreadId === '' ||
-                           labelThreadId.toLowerCase() === 'false' ||
-                           labelThreadId === '0';
-        if (isDisabled) {
-          overrides.threadId = '';
-        } else {
-          overrides.threadId = labelThreadId;
-        }
+      const labelValue = labelTopicId !== undefined ? labelTopicId : labelThreadId;
+
+      if (labelValue !== undefined) {
+        const value = labelValue.trim();
+        const isDisabled = value === '' ||
+                           value.toLowerCase() === 'false' ||
+                           value === '0';
+        overrides.threadId = isDisabled ? '' : value;
       }
 
       const attachment = template(event);
