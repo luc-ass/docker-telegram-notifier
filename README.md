@@ -4,7 +4,7 @@
 # [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/luc-ass/docker-telegram-notifier/docker-image.yml?branch=main&style=for-the-badge)](https://github.com/luc-ass/docker-telegram-notifier/actions) [![Docker Pulls](https://img.shields.io/docker/pulls/lorcas/docker-telegram-notifier?logo=docker&style=for-the-badge)](https://hub.docker.com/r/lorcas/docker-telegram-notifier) [![Docker Image Version (latest semver)](https://img.shields.io/docker/v/lorcas/docker-telegram-notifier?logo=docker&style=for-the-badge)](https://github.com/luc-ass/docker-telegram-notifier/releases)
 
 
-This Docker container provides a Telegram integration to notify you about Docker events. It can notify you when a container starts, stops (including details about exit codes), restarts, and when the healthcheck status of a Docker container changes. You have the flexibility to customize these notifications by [modifying the `templates.js` file](#3-notification-messages-customization).
+This Docker container provides a Telegram integration to notify you about Docker events. It can notify you when a container starts, stops (including details about exit codes) and when the healthcheck status of a Docker container changes. A restart is reported as a stop followed by a start, since that is what Docker emits. You have the flexibility to customize these notifications by [modifying the `templates.js` file](#3-notification-messages-customization).
 
 This fork was created to address security vulnerabilities and add support for
 - `linux/arm64` and
