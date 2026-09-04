@@ -28,12 +28,14 @@ If you encounter any issues, please feel free to contribute by fixing them and o
   - [2.3 Whitelisting](#23-whitelisting)
   - [2.4 Per container notifications](#24-per-container-notifications)
   - [2.5 Remote docker instance](#25-remote-docker-instance)
+  - [2.6 Bot token from a file](#26-bot-token-from-a-file)
 - [3. Notification messages customization](#3-notification-messages-customization)
   - [3.1 Create a custom template](#31-create-a-custom-template)
   - [3.2 Customizing message strings](#32-customizing-message-strings)
   - [3.2.1 Default docker event variables](#321-default-docker-event-variables)
   - [3.2.2 Docker Compose variables](#322-docker-compose-variables)
   - [3.2.3 Custom container information in Telegram notifications](#323-custom-container-information-in-telegram-notifications)
+- [4. Securing the docker socket](#4-securing-the-docker-socket)
 - [Credits](#credits)
 
 
@@ -202,6 +204,30 @@ services:
 ```
 
 
+### 2.6 Bot token from a file
+
+Environment variables are readable by anyone who can run `docker inspect` on the container. To keep the bot token out of them, append `_FILE` to the variable name and point it at a file:
+
+```yaml
+services:
+  telegram-notifier:
+    image: lorcas/docker-telegram-notifier:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      TELEGRAM_NOTIFIER_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
+      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
+    secrets:
+      - telegram_bot_token
+
+secrets:
+  telegram_bot_token:
+    file: ./telegram_bot_token.txt
+```
+
+`TELEGRAM_NOTIFIER_CHAT_ID_FILE` works the same way. A trailing newline in the file is ignored. If the file cannot be read, the container stops immediately with exit code 100 and names the file it tried to open.
+
+
 ## 3. Notification messages customization
 
 ### 3.1 Create a custom template
@@ -245,10 +271,15 @@ Here are some variables available to customize the notification messages.
 
 | Variable | Description |
 | :-------- | :----------- |
+| `${e.Actor.ID}` | Container ID (full, 64 characters) |
 | `${e.Actor.Attributes.name}` | Container name |
-| `${e.Actor.Attributes.container}` | Container ID |
 | `${e.Actor.Attributes.image}` | Container image used |
-| `${e.Actor.Attirbutes.exitCode}` | Container exit code |
+| `${e.Actor.Attributes.exitCode}` | Container exit code (`die` events only) |
+| `${e.Actor.Attributes.execDuration}` | Seconds the container ran (`die` events only) |
+
+Beyond those, **every label on the container is available under the same path**, which is what makes [custom container information](#323-custom-container-information-in-telegram-notifications) work. That includes the labels `docker compose` adds by itself, listed below.
+
+`Attributes` is a plain object, so values are `undefined` when the event does not carry them — `exitCode` on a `start` event, for instance. The authoritative list of what an event can contain is the [Docker Engine API](https://docs.docker.com/reference/api/engine/version/v1.51/#tag/System/operation/SystemEvents); the notifier passes it through unchanged, apart from HTML-escaping the values.
 
 Example:
 ```js
@@ -256,7 +287,7 @@ container_start: e =>
     `&#9989; Container Started\n` +
     `Name: <b>${e.Actor.Attributes.name}</b>\n` +
     `Image: <code>${e.Actor.Attributes.image}</code>\n` +
-    `ID: <code>${e.Actor.Attributes.container}</code>`
+    `ID: <code>${e.Actor.ID.slice(0, 12)}</code>`
 ```
 ```
 🟢 Container Started
@@ -276,6 +307,8 @@ The following variables are only available if the container was started using `d
 | `${e.Actor.Attributes['com.docker.compose.service']}` | Compose Service Name |
 | `${e.Actor.Attributes['com.docker.compose.version']}` | Compose Version |
 
+Compose adds more than these — `com.docker.compose.config-hash`, `com.docker.compose.image`, `com.docker.compose.oneoff`, `com.docker.compose.project.config_files` and `com.docker.compose.project.working_dir` are present as well. They are ordinary labels, so they are reached the same way.
+
 Example:
 ```js
 container_start: e =>
@@ -283,7 +316,7 @@ container_start: e =>
     `Project: <b>${e.Actor.Attributes['com.docker.compose.project']}</b>\n` +
     `Service: <b>${e.Actor.Attributes['com.docker.compose.service']}</b> (#${e.Actor.Attributes['com.docker.compose.container-number']})\n` +
     `Image: <code>${e.Actor.Attributes.image}</code>\n` +
-    `Compose Version: <code>${e.Actor.Attributes['com.docker.compose.version']}<code>`
+    `Compose Version: <code>${e.Actor.Attributes['com.docker.compose.version']}</code>`
 ```
 ```
 🟢 Container Started
@@ -324,13 +357,57 @@ Leverage the `labels:` defintion on docker services to make custom information a
     ```js
     container_start: e =>
         `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n` +
-        `Image: <code>${e.Actor.Attributes.image}</code>\n` +
+        `Image: <code>${e.Actor.Attributes.image}</code>` +
         (
-          ${e.Actor.Attributes['mycustom.telegram.container-info']} ?
-          `NOTE: ${e.Actor.Attributes['mycustom.telegram.container-info']}` :
+          e.Actor.Attributes['mycustom.telegram.container-info'] ?
+          `\nNOTE: ${e.Actor.Attributes['mycustom.telegram.container-info']}` :
           ''
         )
     ```
+
+## 4. Securing the docker socket
+
+The basic setup mounts the docker socket read-only:
+
+```yaml
+volumes:
+  - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+
+**`:ro` protects the socket file, not the API behind it.** Anything that can reach the docker socket can create a container, mount any host path into it and run it as root — so it can take over the host, read-only mount or not. That applies to every tool that reads docker events this way, this one included.
+
+This notifier only needs four read-only endpoints: `version`, `info`, `ping` and `events`. A socket proxy is a small container that exposes exactly those and refuses everything else:
+
+```yaml
+services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    environment:
+      EVENTS: 1   # the event stream itself
+      INFO: 1     # host details in the start-up message
+      PING: 1     # the healthcheck's liveness probe
+      VERSION: 1  # docker version in the start-up message
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  telegram-notifier:
+    image: lorcas/docker-telegram-notifier:latest
+    depends_on:
+      - docker-socket-proxy
+    environment:
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
+      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
+    restart: unless-stopped
+```
+
+The notifier gets no volume at all in this setup — it talks HTTP to the proxy, and the proxy is the only container holding the socket. Everything the proxy does not explicitly allow is refused, so a compromised notifier cannot create containers.
+
+Keep the proxy off any published port. It has no authentication, so anything that can reach it inherits its permissions.
+
+> This combination is tested: with those four permissions enabled and everything else at its default of off, both notifications and the healthcheck work. `PING` is easy to miss — the healthcheck uses it to tell a live daemon from a stalled event stream.
+
 
 ## Credits
 
