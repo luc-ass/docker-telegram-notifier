@@ -6,6 +6,11 @@ const TelegramClient = require('./telegram');
 const JSONStream = require('JSONStream');
 const templates = require('./templates');
 const { escapeHtml } = require('./escape');
+const { loadFileSettings } = require('./secrets');
+
+// Before anything reads them: a token handed over as a file must be in place
+// before the Telegram client is constructed below.
+loadFileSettings(['TELEGRAM_NOTIFIER_BOT_TOKEN', 'TELEGRAM_NOTIFIER_CHAT_ID']);
 
 /**
  * Environment values are strings, so the plain truthiness check this used to
