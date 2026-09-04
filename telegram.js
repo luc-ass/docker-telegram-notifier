@@ -23,13 +23,89 @@ function parseThreadId(value) {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
+// Telegram accepts roughly 20 messages per minute into one group. A
+// crash-looping container produces far more than that, so sends are spaced
+// out instead of being fired as fast as docker reports them.
+const configuredInterval = Number.parseInt(process.env.TELEGRAM_NOTIFIER_SEND_INTERVAL_MS, 10);
+const SEND_INTERVAL_MS = Number.isSafeInteger(configuredInterval) && configuredInterval >= 0 ?
+  configuredInterval : 1000;
+
+// A burst that outruns the queue is dropped rather than kept in memory
+// forever: by the time a backlog this long drains, the notifications are of
+// no use anyway.
+const MAX_QUEUED = 200;
+const MAX_RATE_LIMIT_RETRIES = 3;
+
+// Every failed send used to produce another notification, so one bad topic id
+// could turn a restart loop into a stream of error messages.
+const ERROR_WINDOW_MS = 300000;
+const MAX_ERRORS_PER_WINDOW = 5;
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 class TelegramClient {
   constructor() {
     this.telegram = new Telegram(process.env.TELEGRAM_NOTIFIER_BOT_TOKEN);
+    this.queue = Promise.resolve();
+    this.queued = 0;
+    this.lastSentAt = 0;
+    this.recentErrors = [];
+    this.suppressionAnnounced = false;
+    this.dropped = 0;
     this.threadId =
       process.env.TELEGRAM_NOTIFIER_TOPIC_ID ||
       process.env.TELEGRAM_NOTIFIER_THREAD_ID ||
       null;
+  }
+
+  // Runs tasks one at a time, never closer together than SEND_INTERVAL_MS.
+  enqueue(task) {
+    if (this.queued >= MAX_QUEUED) {
+      // One line per drop would bury the log during exactly the burst that
+      // caused it, so report the first drop and the total once it clears.
+      if (this.dropped === 0) {
+        console.error(`Send queue is full (${MAX_QUEUED} waiting), dropping notifications.`);
+      }
+      this.dropped++;
+      return Promise.resolve(null);
+    }
+
+    if (this.dropped > 0) {
+      console.error(`Send queue has room again, ${this.dropped} notification(s) were dropped.`);
+      this.dropped = 0;
+    }
+
+    this.queued++;
+    const run = this.queue.then(async () => {
+      const wait = SEND_INTERVAL_MS - (Date.now() - this.lastSentAt);
+      if (wait > 0) await sleep(wait);
+      try {
+        return await task();
+      } finally {
+        this.lastSentAt = Date.now();
+        this.queued--;
+      }
+    });
+
+    // The chain must survive a failed send, or nothing is ever sent again.
+    this.queue = run.catch(() => {});
+    return run;
+  }
+
+  // Honours the retry_after Telegram sends with a 429 instead of hammering it.
+  async withRateLimitRetry(call) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await call();
+      } catch (e) {
+        const retryAfter = e.response?.parameters?.retry_after;
+        if (retryAfter === undefined || attempt >= MAX_RATE_LIMIT_RETRIES) throw e;
+        console.error(`Rate limited by Telegram, retrying in ${retryAfter}s.`);
+        await sleep((retryAfter + 1) * 1000);
+      }
+    }
   }
 
   async send(message, overrides = {}) {
@@ -58,14 +134,36 @@ class TelegramClient {
 
     const chatId = overrides.chatId || process.env.TELEGRAM_NOTIFIER_CHAT_ID;
 
-    return this.telegram.sendMessage(
-      chatId,
-      message,
-      options
-    );
+    return this.enqueue(() => this.withRateLimitRetry(
+      () => this.telegram.sendMessage(chatId, message, options)
+    ));
+  }
+
+  // True while the error budget for the current window still has room.
+  mayReportError() {
+    const now = Date.now();
+    this.recentErrors = this.recentErrors.filter(at => now - at < ERROR_WINDOW_MS);
+
+    if (this.recentErrors.length >= MAX_ERRORS_PER_WINDOW) {
+      if (!this.suppressionAnnounced) {
+        console.error(
+          `More than ${MAX_ERRORS_PER_WINDOW} errors in ${ERROR_WINDOW_MS / 1000}s; ` +
+          `further error notifications are suppressed until the rate drops. ` +
+          `They are still written to the log.`
+        );
+        this.suppressionAnnounced = true;
+      }
+      return false;
+    }
+
+    this.recentErrors.push(now);
+    this.suppressionAnnounced = false;
+    return true;
   }
 
   async sendError(e, overrides = {}) {
+    if (!this.mayReportError()) return null;
+
     const options = {
       parse_mode: 'HTML',
       disable_web_page_preview: true
@@ -95,11 +193,9 @@ class TelegramClient {
     try {
       // Try to send error WITHOUT the topic_id to avoid recursive errors
       // This ensures the message reaches the chat even if topic_id is wrong
-      return await this.telegram.sendMessage(
-        chatId,
-        errorMessage,
-        options
-      );
+      return await this.enqueue(() => this.withRateLimitRetry(
+        () => this.telegram.sendMessage(chatId, errorMessage, options)
+      ));
     } catch (fallbackError) {
       // If even this fails, log to console only
       console.error('Failed to send error notification to Telegram:', {
