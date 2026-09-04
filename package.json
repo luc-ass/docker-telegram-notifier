@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node app.js",
     "healthcheck": "node app.js healthcheck",
-    "test": "node --test"
+    "test": "node --test",
+    "coverage": "node --test --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info"
   },
   "author": "poma, arefaslani",
   "license": "Apache-2.0",

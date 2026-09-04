@@ -24,3 +24,43 @@ jobs:
         run: npm ci
       - name: Test
         run: npm test
+
+  # Kept separate so the job that needs write access is the only one that has
+  # it, and so it never runs for a pull request from a fork.
+  badge:
+    if: github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Measure coverage
+        run: npm run coverage
+      - name: Publish the badge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/coverage-badge.js lcov.info coverage.json
+
+          # An orphan branch, force-pushed each time: the badge only ever needs
+          # its current value, and a history of it would be noise.
+          work="$(mktemp -d)"
+          cp coverage.json "$work/"
+          cd "$work"
+          git init -q
+          git checkout -q -b badges
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add coverage.json
+          git commit -q -m "Update the coverage badge"
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" badges
