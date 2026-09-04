@@ -5,10 +5,69 @@ const Docker = require('dockerode');
 const TelegramClient = require('./telegram');
 const JSONStream = require('JSONStream');
 const templates = require('./templates');
+const { escapeHtml } = require('./escape');
 
-const { ONLY_WHITELIST } = process.env;
+/**
+ * Environment values are strings, so the plain truthiness check this used to
+ * do turned ONLY_WHITELIST=false into "whitelist on" — the exact opposite of
+ * what the compose file said.
+ */
+function envFlag(value) {
+  if (value === undefined) return false;
+  const flag = String(value).trim().toLowerCase();
+  return flag !== '' && flag !== 'false' && flag !== '0' &&
+         flag !== 'no' && flag !== 'off';
+}
+
+const ONLY_WHITELIST = envFlag(process.env.ONLY_WHITELIST);
 const docker = new Docker();
 const telegram = new TelegramClient();
+
+/**
+ * Ask docker only for the events we have a template for. Derived from the
+ * template keys rather than hard-coded, so a mounted templates.js that adds
+ * events keeps receiving them.
+ */
+function eventFilters() {
+  const types = new Set();
+  const events = new Set();
+
+  for (const key of Object.keys(templates)) {
+    // Not an event template — sendVersion calls it directly.
+    if (key === 'connection_message') continue;
+
+    const separator = key.indexOf('_');
+    if (separator === -1) continue;
+
+    types.add(key.slice(0, separator));
+    // 'health_status: healthy' is filtered on the action name alone.
+    events.add(key.slice(separator + 1).split(':')[0].trim());
+  }
+
+  // Filtering on nothing would mean receiving nothing, so an unusable set of
+  // templates falls back to the unfiltered stream.
+  if (types.size === 0 || events.size === 0) return null;
+  return { type: [...types], event: [...events] };
+}
+
+const EVENT_FILTERS = eventFilters();
+
+/**
+ * Attributes carry arbitrary user input: container names, image tags and any
+ * custom label the README encourages people to add. Escaping them here covers
+ * every template, including the ones people mount themselves, instead of
+ * asking each template to remember.
+ */
+function withEscapedAttributes(event) {
+  const attributes = event.Actor?.Attributes;
+  if (!attributes) return event;
+
+  const escaped = {};
+  for (const [key, value] of Object.entries(attributes)) {
+    escaped[key] = escapeHtml(value);
+  }
+  return { ...event, Actor: { ...event.Actor, Attributes: escaped } };
+}
 
 // The healthcheck runs as its own process and cannot see the state of the
 // event loop, so the listener leaves a heartbeat file behind instead. It is
@@ -71,7 +130,7 @@ async function sendEvent(event) {
         overrides.threadId = isDisabled ? '' : value;
       }
 
-      const attachment = template(event);
+      const attachment = template(withEscapedAttributes(event));
       console.log(attachment, "\n");
       await telegram.send(attachment, overrides);
     }
@@ -152,6 +211,9 @@ function scheduleReconnect(reason) {
 
 async function connectEventStream() {
   const options = {};
+  if (EVENT_FILTERS) {
+    options.filters = EVENT_FILTERS;
+  }
   if (lastEventTime !== null) {
     options.since = lastEventTime;
   }
@@ -269,10 +331,23 @@ async function healthcheck() {
   process.exit(0);
 }
 
+function checkConfiguration() {
+  const missing = ['TELEGRAM_NOTIFIER_BOT_TOKEN', 'TELEGRAM_NOTIFIER_CHAT_ID']
+    .filter(name => !process.env[name] || process.env[name].trim() === '');
+
+  if (missing.length > 0) {
+    console.error(`Missing required configuration: ${missing.join(', ')}`);
+    console.error('See https://github.com/luc-ass/docker-telegram-notifier#1-basic-setup');
+    process.exit(100);
+  }
+}
+
 function handleError(e) {
   console.error(e);
   telegram.sendError(e).catch(console.error);
 }
+
+checkConfiguration();
 
 if (process.argv.includes("healthcheck")) {
   healthcheck();
