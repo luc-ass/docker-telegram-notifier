@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node app.js",
     "healthcheck": "node app.js healthcheck",
-    "test": "node --test test/"
+    "test": "node --test"
   },
   "author": "poma, arefaslani",
   "license": "Apache-2.0",
