@@ -24,6 +24,35 @@ const docker = new Docker();
 const telegram = new TelegramClient();
 
 /**
+ * Ask docker only for the events we have a template for. Derived from the
+ * template keys rather than hard-coded, so a mounted templates.js that adds
+ * events keeps receiving them.
+ */
+function eventFilters() {
+  const types = new Set();
+  const events = new Set();
+
+  for (const key of Object.keys(templates)) {
+    // Not an event template — sendVersion calls it directly.
+    if (key === 'connection_message') continue;
+
+    const separator = key.indexOf('_');
+    if (separator === -1) continue;
+
+    types.add(key.slice(0, separator));
+    // 'health_status: healthy' is filtered on the action name alone.
+    events.add(key.slice(separator + 1).split(':')[0].trim());
+  }
+
+  // Filtering on nothing would mean receiving nothing, so an unusable set of
+  // templates falls back to the unfiltered stream.
+  if (types.size === 0 || events.size === 0) return null;
+  return { type: [...types], event: [...events] };
+}
+
+const EVENT_FILTERS = eventFilters();
+
+/**
  * Attributes carry arbitrary user input: container names, image tags and any
  * custom label the README encourages people to add. Escaping them here covers
  * every template, including the ones people mount themselves, instead of
@@ -182,6 +211,9 @@ function scheduleReconnect(reason) {
 
 async function connectEventStream() {
   const options = {};
+  if (EVENT_FILTERS) {
+    options.filters = EVENT_FILTERS;
+  }
   if (lastEventTime !== null) {
     options.since = lastEventTime;
   }
