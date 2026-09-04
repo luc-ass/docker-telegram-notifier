@@ -1,17 +1,5 @@
 const { Telegram } = require('telegraf');
-
-/**
- * Messages are sent with parse_mode HTML, so every value interpolated into
- * message text has to be escaped. Container names, image tags and custom
- * labels are arbitrary strings: a single stray '<' makes Telegram reject the
- * whole message.
- */
-function escapeHtml(text) {
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+const { escapeHtml } = require('./escape');
 
 /**
  * Telegram expects message_thread_id to be a positive integer. parseInt on a

@@ -5,10 +5,28 @@ const Docker = require('dockerode');
 const TelegramClient = require('./telegram');
 const JSONStream = require('JSONStream');
 const templates = require('./templates');
+const { escapeHtml } = require('./escape');
 
 const { ONLY_WHITELIST } = process.env;
 const docker = new Docker();
 const telegram = new TelegramClient();
+
+/**
+ * Attributes carry arbitrary user input: container names, image tags and any
+ * custom label the README encourages people to add. Escaping them here covers
+ * every template, including the ones people mount themselves, instead of
+ * asking each template to remember.
+ */
+function withEscapedAttributes(event) {
+  const attributes = event.Actor?.Attributes;
+  if (!attributes) return event;
+
+  const escaped = {};
+  for (const [key, value] of Object.entries(attributes)) {
+    escaped[key] = escapeHtml(value);
+  }
+  return { ...event, Actor: { ...event.Actor, Attributes: escaped } };
+}
 
 // The healthcheck runs as its own process and cannot see the state of the
 // event loop, so the listener leaves a heartbeat file behind instead. It is
@@ -71,7 +89,7 @@ async function sendEvent(event) {
         overrides.threadId = isDisabled ? '' : value;
       }
 
-      const attachment = template(event);
+      const attachment = template(withEscapedAttributes(event));
       console.log(attachment, "\n");
       await telegram.send(attachment, overrides);
     }
