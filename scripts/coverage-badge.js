@@ -19,11 +19,22 @@ try {
   process.exit(1);
 }
 
+// A truncated report would otherwise poison the sums with NaN, which slips
+// past the "no records at all" check below and publishes a "NaN%" badge.
+const count = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) {
+    console.error(`Malformed line record in ${lcovPath}: ${JSON.stringify(value)}`);
+    process.exit(1);
+  }
+  return parsed;
+};
+
 let found = 0;
 let hit = 0;
 for (const line of report.split('\n')) {
-  if (line.startsWith('LF:')) found += Number.parseInt(line.slice(3), 10);
-  else if (line.startsWith('LH:')) hit += Number.parseInt(line.slice(3), 10);
+  if (line.startsWith('LF:')) found += count(line.slice(3));
+  else if (line.startsWith('LH:')) hit += count(line.slice(3));
 }
 
 if (found === 0) {
@@ -31,7 +42,9 @@ if (found === 0) {
   process.exit(1);
 }
 
-const percent = (hit / found) * 100;
+// Rounded once, so the colour cannot disagree with the number next to it:
+// 89.7% reads as "90%" and has to be brightgreen, not green.
+const percent = Math.round((hit / found) * 100);
 
 // The colour has to be decided here: shields only applies its own scale to
 // its built-in badges, not to endpoint ones.
@@ -45,7 +58,7 @@ const colour =
 const badge = {
   schemaVersion: 1,
   label: 'coverage',
-  message: `${percent.toFixed(0)}%`,
+  message: `${percent}%`,
   color: colour
 };
 

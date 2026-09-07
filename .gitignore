@@ -1,5 +1,6 @@
 .vscode/
 /node_modules
 *BAK*
-*BAK.*lcov.info
+*BAK.*
+lcov.info
 coverage.json
