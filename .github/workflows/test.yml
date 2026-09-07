@@ -29,6 +29,11 @@ jobs:
   # it, and so it never runs for a pull request from a fork.
   badge:
     if: github.event_name == 'push'
+    # The badge branch is force-pushed, so the newest push has to be the one
+    # that wins the race; an older, slower job must not overwrite it.
+    concurrency:
+      group: coverage-badge
+      cancel-in-progress: true
     needs: test
     runs-on: ubuntu-latest
     permissions:
