@@ -259,6 +259,13 @@ secrets:
 
 Swarm mounts the secret at `/run/secrets/<name>` in every task, so the same stack works whatever node a replica lands on. Rotating the token means creating a second secret and pointing the service at it: a secret's content cannot be changed in place.
 
+Passing the token in the environment keeps working and is not going away. A container started that way notes the alternative once in its log — once per start, never from the healthcheck:
+
+```
+Note: TELEGRAM_NOTIFIER_BOT_TOKEN is set in the environment, where `docker inspect` can read it.
+TELEGRAM_NOTIFIER_BOT_TOKEN_FILE takes the token from a docker secret instead.
+```
+
 
 ### 2.7 Outbound proxy
 
