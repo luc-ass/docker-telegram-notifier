@@ -30,12 +30,14 @@ If you encounter any issues, please feel free to contribute by fixing them and o
   - [2.5 Remote docker instance](#25-remote-docker-instance)
   - [2.6 Bot token from a file](#26-bot-token-from-a-file)
   - [2.7 Outbound proxy](#27-outbound-proxy)
+  - [2.8 Docker Swarm](#28-docker-swarm)
 - [3. Notification messages customization](#3-notification-messages-customization)
   - [3.1 Create a custom template](#31-create-a-custom-template)
   - [3.2 Customizing message strings](#32-customizing-message-strings)
   - [3.2.1 Default docker event variables](#321-default-docker-event-variables)
   - [3.2.2 Docker Compose variables](#322-docker-compose-variables)
-  - [3.2.3 Custom container information in Telegram notifications](#323-custom-container-information-in-telegram-notifications)
+  - [3.2.3 Docker Swarm variables](#323-docker-swarm-variables)
+  - [3.2.4 Custom container information in Telegram notifications](#324-custom-container-information-in-telegram-notifications)
 - [4. Securing the docker socket](#4-securing-the-docker-socket)
 - [Credits](#credits)
 
@@ -263,6 +265,48 @@ docker run -d \
 The lowercase `https_proxy` is accepted as well. This only affects the connection to Telegram; the docker socket is not reached over the network. An unusable proxy URL stops the container with exit code 100.
 
 
+### 2.8 Docker Swarm
+
+Swarm names a task container `<service>.<slot>.<task id>` and pins it to an image digest, which is what a notification used to quote. On a swarm the notifier names the service and the node instead:
+
+```
+▶️ web_server.3 started
+Image: nginx:alpine
+Node: swarm-node-2
+```
+
+The docker event stream only ever carries the containers of the daemon it comes from, so one notifier reports one node. Deploy it as a global service to cover the whole swarm: every node then reports its own containers, and nothing is reported twice.
+
+```yaml
+services:
+  telegram-notifier:
+    image: lorcas/docker-telegram-notifier:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      TELEGRAM_NOTIFIER_BOT_TOKEN: <bot_token>
+      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
+    deploy:
+      mode: global
+```
+
+The node name is the hostname the docker daemon reports, which is the `HOSTNAME` column of `docker node ls` and the name in the notifier's own start-up message. Containers that are not swarm tasks keep the notification they have always had, so a swarm manager that also runs plain containers reports both.
+
+> [!IMPORTANT]
+> The labels that configure the notifier — `telegram-notifier.monitor`, `.chat-id`, `.topic-id` and `.thread-id` — have to be **container** labels, which in a stack file means the service's own `labels:` key. Labels under `deploy.labels` are attached to the swarm service object instead, never to its containers, and so never appear in the event stream.
+>
+> ```yaml
+> services:
+>   example:
+>     image: hello-world
+>     labels:              # container labels - read by the notifier
+>       telegram-notifier.monitor: "false"
+>     deploy:
+>       labels:            # service labels - NOT read by the notifier
+>         com.example.team: platform
+> ```
+
+
 ## 3. Notification messages customization
 
 ### 3.1 Create a custom template
@@ -312,7 +356,7 @@ Here are some variables available to customize the notification messages.
 | `${e.Actor.Attributes.exitCode}` | Container exit code (`die` events only) |
 | `${e.Actor.Attributes.execDuration}` | Seconds the container ran (`die` events only) |
 
-Beyond those, **every label on the container is available under the same path**, which is what makes [custom container information](#323-custom-container-information-in-telegram-notifications) work. That includes the labels `docker compose` adds by itself, listed below.
+Beyond those, **every label on the container is available under the same path**, which is what makes [custom container information](#324-custom-container-information-in-telegram-notifications) work. That includes the labels `docker compose` adds by itself, listed below.
 
 `Attributes` is a plain object, so values are `undefined` when the event does not carry them — `exitCode` on a `start` event, for instance. The authoritative list of what an event can contain is the [Docker Engine API](https://docs.docker.com/reference/api/engine/version/v1.51/#tag/System/operation/SystemEvents); the notifier passes it through unchanged, apart from HTML-escaping the values.
 
@@ -361,7 +405,39 @@ Image: nginx:latest
 Compose Version: 2.17.2
 ```
 
-### 3.2.3 Custom container information in Telegram notifications
+### 3.2.3 Docker Swarm variables
+
+Swarm labels every task container it starts, and the notifier turns those labels into the values below. `e.swarm` is absent unless the container is a swarm task, which is what makes it the check a template uses to tell a swarm apart from a plain docker host.
+
+| Variable | Description |
+| :-------- | :----------- |
+| `${e.node}` | Name of the docker host the event happened on. Set on every event, not only on a swarm |
+| `${e.swarm}` | `undefined` outside of swarm |
+| `${e.swarm.name}` | Service name and slot, e.g. `web_server.3` — the readable half of the task name |
+| `${e.swarm.service}` | Service name, e.g. `web_server` |
+| `${e.swarm.slot}` | Replica number, e.g. `3`. `undefined` for a global service, which numbers its tasks by node id instead |
+| `${e.swarm.stack}` | Stack name, if the service was deployed with `docker stack deploy` |
+| `${e.swarm.nodeId}` | Id of the node, as opposed to the name in `${e.node}` |
+
+The underlying labels stay available as ordinary attributes: `com.docker.swarm.service.id`, `com.docker.swarm.service.name`, `com.docker.swarm.task.id`, `com.docker.swarm.task.name`, `com.docker.swarm.node.id` and `com.docker.stack.namespace`.
+
+Example:
+```js
+container_start: e =>
+    `&#9989; Task Started\n` +
+    `Stack: <b>${e.swarm.stack}</b>\n` +
+    `Service: <b>${e.swarm.service}</b> (replica ${e.swarm.slot})\n` +
+    `Node: <code>${e.node}</code>`
+```
+```
+✅ Task Started
+Stack: web
+Service: web_server (replica 3)
+Node: swarm-node-2
+```
+
+
+### 3.2.4 Custom container information in Telegram notifications
 
 Leverage the `labels:` defintion on docker services to make custom information available to notification messages:
 
