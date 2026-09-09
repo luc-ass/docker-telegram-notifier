@@ -337,8 +337,12 @@ async function healthcheck() {
 }
 
 function checkConfiguration() {
+  // Both spellings are named: someone who configured the _FILE variant reads
+  // the bare name as "the secret never arrived" and starts looking in the
+  // wrong place, which is all they can see from a container log.
   const missing = ['TELEGRAM_NOTIFIER_BOT_TOKEN', 'TELEGRAM_NOTIFIER_CHAT_ID']
-    .filter(name => !process.env[name] || process.env[name].trim() === '');
+    .filter(name => !process.env[name] || process.env[name].trim() === '')
+    .map(name => `${name} (or ${name}_FILE)`);
 
   if (missing.length > 0) {
     console.error(`Missing required configuration: ${missing.join(', ')}`);
