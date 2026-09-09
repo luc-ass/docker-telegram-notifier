@@ -59,7 +59,7 @@ const EVENT_FILTERS = eventFilters();
 
 /**
  * Attributes carry arbitrary user input: container names, image tags and any
- * custom label the README encourages people to add. Escaping them here covers
+ * custom label the docs encourage people to add. Escaping them here covers
  * every template, including the ones people mount themselves, instead of
  * asking each template to remember.
  */
@@ -342,7 +342,7 @@ function checkConfiguration() {
 
   if (missing.length > 0) {
     console.error(`Missing required configuration: ${missing.join(', ')}`);
-    console.error('See https://github.com/luc-ass/docker-telegram-notifier#1-basic-setup');
+    console.error('See https://github.com/luc-ass/docker-telegram-notifier/blob/main/docs/basic-setup.md');
     process.exit(100);
   }
 }
