@@ -1,5 +1,8 @@
 # Documentation
 
+Everything beyond the quick start in the
+[README](https://github.com/luc-ass/docker-telegram-notifier#readme).
+
 | Page | What it covers |
 | :--- | :--- |
 | [Basic setup](basic-setup.md) | Create the bot, run the container, add a healthcheck |

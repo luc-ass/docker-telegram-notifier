@@ -42,6 +42,8 @@ That's it — every container on the host is reported from now on.
 | [Custom message templates](docs/custom-templates.md) | Rewriting the notification texts |
 | [Securing the docker socket](docs/securing-the-docker-socket.md) | Why `:ro` is not enough, and what to do instead |
 
+The same pages are mirrored to the [wiki](https://github.com/luc-ass/docker-telegram-notifier/wiki), which is generated from `docs/` — edit them there and the next sync overwrites you.
+
 > [!WARNING]
 > Mounting the docker socket read-only protects the socket file, not the API
 > behind it — anything that reaches it can take over the host. See

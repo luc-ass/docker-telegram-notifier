@@ -1,0 +1,65 @@
+name: Sync wiki
+
+# The wiki is a mirror of docs/, never a source: it is rebuilt from scratch on
+# every run, so an edit made in the wiki UI survives only until the next push
+# to main. _Footer.md says as much on every page.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'scripts/build-wiki.js'
+      - '.github/workflows/wiki.yml'
+  workflow_dispatch:
+
+# Two pushes in quick succession would otherwise race for the same wiki
+# repository, and the loser fails on a non-fast-forward push.
+concurrency:
+  group: sync-wiki
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Render docs/ into wiki pages
+        run: node scripts/build-wiki.js docs wiki
+
+      # GITHUB_TOKEN cannot push to the wiki repository — the wiki is not
+      # covered by the contents permission. Set a WIKI_TOKEN secret holding a
+      # personal access token with repository write access.
+      - name: Check out the wiki
+        run: |
+          if [ -z "${{ secrets.WIKI_TOKEN }}" ]; then
+            echo "::error::WIKI_TOKEN is not set. Create a personal access token with write access to this repository and add it as a repository secret named WIKI_TOKEN."
+            exit 1
+          fi
+          git clone \
+            "https://x-access-token:${{ secrets.WIKI_TOKEN }}@github.com/${{ github.repository }}.wiki.git" \
+            wiki-repo
+
+      - name: Publish
+        run: |
+          # Delete everything but .git so a page removed from docs/ also
+          # disappears from the wiki, then copy the freshly rendered set in.
+          find wiki-repo -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp wiki/*.md wiki-repo/
+
+          cd wiki-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "Wiki already matches docs/, nothing to publish."
+            exit 0
+          fi
+
+          git commit -m "Sync docs/ from ${{ github.sha }}"
+          git push
