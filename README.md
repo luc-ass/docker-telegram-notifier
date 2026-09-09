@@ -226,7 +226,38 @@ secrets:
     file: ./telegram_bot_token.txt
 ```
 
-`TELEGRAM_NOTIFIER_CHAT_ID_FILE` works the same way. A trailing newline in the file is ignored. If the file cannot be read, the container stops immediately with exit code 100 and names the file it tried to open.
+`TELEGRAM_NOTIFIER_CHAT_ID_FILE` works the same way. A trailing newline in the file is ignored, so `echo` into a file is fine.
+
+If the file cannot be read, or turns out to be empty, the container stops immediately with exit code 100 and names the file it tried to open. Both cases are reported as what they are rather than as a missing variable, because the environment is the wrong place to go looking when the secret is the part that is wrong.
+
+#### On Swarm and in Portainer
+
+`file:` reads a path next to the compose file. A swarm stack has no such path — and in Portainer the stack is pasted in as text — so the secret is created on a manager first and referenced as external:
+
+```bash
+printf '%s' '<bot_token>' | docker secret create telegram_bot_token -
+```
+
+`printf` rather than `echo`, so no newline travels with the token in the first place.
+
+```yaml
+services:
+  telegram-notifier:
+    image: lorcas/docker-telegram-notifier:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      TELEGRAM_NOTIFIER_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
+      TELEGRAM_NOTIFIER_CHAT_ID: <chat_id>
+    secrets:
+      - telegram_bot_token
+
+secrets:
+  telegram_bot_token:
+    external: true
+```
+
+Swarm mounts the secret at `/run/secrets/<name>` in every task, so the same stack works whatever node a replica lands on. Rotating the token means creating a second secret and pointing the service at it: a secret's content cannot be changed in place.
 
 
 ### 2.7 Outbound proxy
