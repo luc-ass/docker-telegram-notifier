@@ -11,6 +11,14 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      # The init, autobuild and analyze steps have to run the same version of
+      # the action, or CodeQL stops with a configuration error. One pull
+      # request per step can therefore never pass its own checks, so they are
+      # updated together.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
