@@ -1,3 +1,26 @@
+// Swarm names a task container `<service>.<slot>.<task id>`, so on a swarm the
+// name in the event reads 'web_server.3.n31jwutl4l33kcuz20taem4p4'. `e.swarm`
+// carries the readable parts of it and is absent outside swarm.
+const name = e => e.swarm ? e.swarm.name : e.Actor.Attributes.name;
+
+// Swarm pins every task to an image digest, which doubles the length of the
+// line and says nothing the tag does not. Dropped only when a tag is left
+// behind: `repo@sha256:...` would otherwise lose its version entirely.
+const image = e => {
+    const reference = String(e.Actor.Attributes.image);
+    const digest = reference.indexOf('@');
+    if (digest === -1) return reference;
+
+    const repository = reference.slice(0, digest);
+    // The colon of a registry port is not a tag separator.
+    const tagged = repository.slice(repository.lastIndexOf('/') + 1).includes(':');
+    return tagged ? repository : reference;
+};
+
+// Naming the host is noise while there is only ever one, so the node line is
+// added on swarm events only.
+const node = e => e.swarm && e.node ? `\nNode: ${e.node}` : '';
+
 module.exports = {
     connection_message: ({hostname, version, os, type, architecture, cpu, memory}) =>
         `Connected to <b>${hostname}</b> (docker v${version})\n` +
@@ -6,8 +29,9 @@ module.exports = {
         `RAM: ${memory}`,
 
     container_start: e =>
-        `&#9654;&#65039; <b>${e.Actor.Attributes.name}</b> started\n` +
-        `Image: <code>${e.Actor.Attributes.image}</code>`,
+        `&#9654;&#65039; <b>${name(e)}</b> started\n` +
+        `Image: <code>${image(e)}</code>` +
+        node(e),
 
     container_die: e => {
         const exitCode = e.Actor.Attributes.exitCode;
@@ -31,25 +55,30 @@ module.exports = {
         }
 
         if (exitCode in normalMap) {
-            return `&#9209;&#65039; <b>${e.Actor.Attributes.name}</b> stopped!\n` +
-            `Image: <code>${e.Actor.Attributes.image}</code>\n` +
-            `${normalMap[exitCode]}`;
+            return `&#9209;&#65039; <b>${name(e)}</b> stopped!\n` +
+            `Image: <code>${image(e)}</code>\n` +
+            `${normalMap[exitCode]}` +
+            node(e);
         } else if (exitCode in nonNormalMap) {
-            return `&#128308; <b>${e.Actor.Attributes.name}</b> stopped!\n` +
-            `Image: <code>${e.Actor.Attributes.image}</code>\n` +
-            `${nonNormalMap[exitCode]}`;
+            return `&#128308; <b>${name(e)}</b> stopped!\n` +
+            `Image: <code>${image(e)}</code>\n` +
+            `${nonNormalMap[exitCode]}` +
+            node(e);
         } else {
-            return `&#128308; <b>${e.Actor.Attributes.name}</b> stopped!\n` +
-            `Image: <code>${e.Actor.Attributes.image}</code>\n` +
-            `Exit code: ${exitCode}`;
+            return `&#128308; <b>${name(e)}</b> stopped!\n` +
+            `Image: <code>${image(e)}</code>\n` +
+            `Exit code: ${exitCode}` +
+            node(e);
         }
     },
 
     'container_health_status: healthy': e =>
-        `&#9989; <b>${e.Actor.Attributes.name}</b> healthy\n` +
-        `Image: <code>${e.Actor.Attributes.image}</code>`,
+        `&#9989; <b>${name(e)}</b> healthy\n` +
+        `Image: <code>${image(e)}</code>` +
+        node(e),
 
     'container_health_status: unhealthy': e =>
-        `&#9888; <b>${e.Actor.Attributes.name}</b> unhealthy!\n` +
-        `Image: <code>${e.Actor.Attributes.image}</code>`,
+        `&#9888; <b>${name(e)}</b> unhealthy!\n` +
+        `Image: <code>${image(e)}</code>` +
+        node(e),
 };

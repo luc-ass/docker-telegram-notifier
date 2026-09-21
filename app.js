@@ -74,6 +74,56 @@ function withEscapedAttributes(event) {
   return { ...event, Actor: { ...event.Actor, Attributes: escaped } };
 }
 
+// Swarm labels every task container it starts. They are ordinary container
+// labels, so they reach us in the event stream like any other attribute.
+const SWARM_SERVICE_NAME = 'com.docker.swarm.service.name';
+const SWARM_TASK_NAME = 'com.docker.swarm.task.name';
+const SWARM_NODE_ID = 'com.docker.swarm.node.id';
+const STACK_NAMESPACE = 'com.docker.stack.namespace';
+
+/**
+ * Swarm names a task container `<service>.<slot>.<task id>`, and that name is
+ * what a message ends up quoting: 'web_server.3.n31jwutl4l33kcuz20taem4p4'.
+ * Split it back into the parts worth reading so a template can say
+ * 'web_server.3' and name the node the task is running on.
+ *
+ * The node is not read from the event. `com.docker.swarm.node.id` holds an id
+ * rather than a name, and resolving it would need the swarm API a worker does
+ * not have — but the event stream only ever carries containers of the daemon
+ * we are connected to, so that daemon's hostname already is the node.
+ *
+ * Attributes arrive escaped from withEscapedAttributes; the node name comes
+ * from the daemon and is escaped here for the same reason. An event without
+ * swarm labels keeps the shape it has always had.
+ */
+function withContext(event, node) {
+  const contextual = node ? { ...event, node: escapeHtml(node) } : event;
+
+  const attributes = event.Actor?.Attributes;
+  const service = attributes?.[SWARM_SERVICE_NAME];
+  if (!service) return contextual;
+
+  // A replicated service puts its slot number between the service name and
+  // the task id. A global service puts the node id there instead, which is no
+  // more readable than the task id, so only a number counts as a slot.
+  const taskName = attributes[SWARM_TASK_NAME] || '';
+  const candidate = taskName.startsWith(`${service}.`) ?
+    taskName.slice(service.length + 1).split('.')[0] :
+    '';
+  const slot = /^\d+$/.test(candidate) ? candidate : undefined;
+
+  return {
+    ...contextual,
+    swarm: {
+      service,
+      slot,
+      name: slot ? `${service}.${slot}` : service,
+      stack: attributes[STACK_NAMESPACE],
+      nodeId: attributes[SWARM_NODE_ID]
+    }
+  };
+}
+
 // The healthcheck runs as its own process and cannot see the state of the
 // event loop, so the listener leaves a heartbeat file behind instead. It is
 // refreshed while the stream is connected and the daemon answers, and goes
@@ -87,6 +137,7 @@ const RECONNECT_MIN_MS = 1000;
 const RECONNECT_MAX_MS = 60000;
 
 let stream = null;
+let nodeName = null;
 let heartbeatTimer = null;
 let reconnectTimer = null;
 let reconnectDelay = RECONNECT_MIN_MS;
@@ -135,7 +186,7 @@ async function sendEvent(event) {
         overrides.threadId = isDisabled ? '' : value;
       }
 
-      const attachment = template(withEscapedAttributes(event));
+      const attachment = template(withContext(withEscapedAttributes(event), nodeName));
       console.log(attachment, "\n");
       await telegram.send(attachment, overrides);
     }
@@ -161,6 +212,15 @@ function isNewEvent(event) {
   if (handledInLastSecond.has(key)) return false;
   handledInLastSecond.add(key);
   return true;
+}
+
+// Not fatal: without a name the messages simply carry no node line.
+async function refreshNodeName() {
+  try {
+    nodeName = (await docker.info()).Name || null;
+  } catch (e) {
+    console.error("Could not read the node name:", e.message);
+  }
 }
 
 function writeHeartbeat() {
@@ -224,6 +284,7 @@ async function connectEventStream() {
   }
 
   stream = await docker.getEvents(options);
+  await refreshNodeName();
   reconnectDelay = RECONNECT_MIN_MS;
   startHeartbeat();
   console.log(lastEventTime === null ?
@@ -368,6 +429,7 @@ module.exports = {
   envFlag,
   eventFilters,
   withEscapedAttributes,
+  withContext,
   isNewEvent,
   // isNewEvent deliberately keeps its state across calls; the tests need a
   // way back to a clean slate.

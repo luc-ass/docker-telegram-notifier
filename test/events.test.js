@@ -90,3 +90,77 @@ test('an event older than the marker is dropped', () => {
     false
   );
 });
+
+// A replicated swarm task, as it arrives on the event stream.
+const swarmEvent = (attributes) => ({
+  Type: 'container',
+  Action: 'start',
+  Actor: {
+    ID: 'abc',
+    Attributes: {
+      name: 'web_server.3.n31jwutl4l33kcuz20taem4p4',
+      image: 'nginx:alpine',
+      'com.docker.swarm.service.name': 'web_server',
+      'com.docker.swarm.task.name': 'web_server.3.n31jwutl4l33kcuz20taem4p4',
+      'com.docker.swarm.node.id': 'p8x1qk2m',
+      'com.docker.stack.namespace': 'web',
+      ...attributes
+    }
+  }
+});
+
+test('a swarm task is reduced to its service and slot', () => {
+  const context = app.withContext(swarmEvent(), 'node2').swarm;
+
+  assert.strictEqual(context.name, 'web_server.3');
+  assert.strictEqual(context.service, 'web_server');
+  assert.strictEqual(context.slot, '3');
+  assert.strictEqual(context.stack, 'web');
+  assert.strictEqual(context.nodeId, 'p8x1qk2m');
+});
+
+test('the node is the daemon we listen to, not a label', () => {
+  assert.strictEqual(app.withContext(swarmEvent(), 'node2').node, 'node2');
+  // Its id is no substitute for a name, so no name means no node.
+  assert.strictEqual(app.withContext(swarmEvent(), null).node, undefined);
+});
+
+test('a node name is escaped like every other value in a message', () => {
+  assert.strictEqual(app.withContext(swarmEvent(), 'a<b>').node, 'a&lt;b&gt;');
+});
+
+test('a global service has no slot to report', () => {
+  // Where a replicated service puts its slot, a global one puts the node id.
+  const event = swarmEvent({
+    'com.docker.swarm.task.name': 'web_server.p8x1qk2m.n31jwutl4l33kcuz20taem4p4'
+  });
+  const context = app.withContext(event, 'node2').swarm;
+
+  assert.strictEqual(context.slot, undefined);
+  assert.strictEqual(context.name, 'web_server');
+});
+
+test('a service started outside a stack has no namespace', () => {
+  const event = swarmEvent({ 'com.docker.stack.namespace': undefined });
+  assert.strictEqual(app.withContext(event, 'node2').swarm.stack, undefined);
+});
+
+test('a task name that does not match its service is not guessed at', () => {
+  const event = swarmEvent({ 'com.docker.swarm.task.name': 'something.else.1' });
+  assert.strictEqual(app.withContext(event, 'node2').swarm.name, 'web_server');
+});
+
+test('an event without swarm labels gains no swarm context', () => {
+  const event = { Type: 'container', Action: 'start', Actor: { ID: 'a', Attributes: { name: 'kimai' } } };
+  const context = app.withContext(event, 'node2');
+
+  assert.strictEqual(context.swarm, undefined);
+  // The node is still offered, so a custom template can name it anywhere.
+  assert.strictEqual(context.node, 'node2');
+});
+
+test('an event without an actor survives the context lookup', () => {
+  const event = { Type: 'container', Action: 'start' };
+  assert.strictEqual(app.withContext(event, null), event);
+  assert.strictEqual(app.withContext(event, 'node2').swarm, undefined);
+});
