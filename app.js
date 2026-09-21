@@ -337,14 +337,41 @@ async function healthcheck() {
 }
 
 function checkConfiguration() {
+  // Both spellings are named: someone who configured the _FILE variant reads
+  // the bare name as "the secret never arrived" and starts looking in the
+  // wrong place, which is all they can see from a container log.
   const missing = ['TELEGRAM_NOTIFIER_BOT_TOKEN', 'TELEGRAM_NOTIFIER_CHAT_ID']
-    .filter(name => !process.env[name] || process.env[name].trim() === '');
+    .filter(name => !process.env[name] || process.env[name].trim() === '')
+    .map(name => `${name} (or ${name}_FILE)`);
 
   if (missing.length > 0) {
     console.error(`Missing required configuration: ${missing.join(', ')}`);
     console.error('See https://github.com/luc-ass/docker-telegram-notifier#1-basic-setup');
     process.exit(100);
   }
+}
+
+/**
+ * A token in the environment is readable by anyone who can run
+ * `docker inspect` on the container. That is not new and nothing is broken by
+ * it, so this is a hint rather than an error — but it is worth saying once,
+ * because the setup that exposes the token is also the one everyone starts
+ * with and then never revisits.
+ *
+ * The chat id is deliberately not mentioned: without the token nobody can do
+ * anything with it, and naming both would blunt the one that matters.
+ *
+ * Returns the text rather than printing it, so the condition can be tested
+ * without capturing console output.
+ */
+function secretHint() {
+  if (process.env.TELEGRAM_NOTIFIER_BOT_TOKEN_FILE) return null;
+  if (!process.env.TELEGRAM_NOTIFIER_BOT_TOKEN) return null;
+
+  return 'Note: TELEGRAM_NOTIFIER_BOT_TOKEN is set in the environment, where ' +
+    '`docker inspect` can read it. TELEGRAM_NOTIFIER_BOT_TOKEN_FILE takes the ' +
+    'token from a docker secret instead.\n' +
+    'See https://github.com/luc-ass/docker-telegram-notifier#26-bot-token-from-a-file';
 }
 
 function handleError(e) {
@@ -360,12 +387,18 @@ if (require.main === module) {
   if (process.argv.includes("healthcheck")) {
     healthcheck();
   } else {
+    // Start-up only. The healthcheck comes through this same file every 30
+    // seconds and would otherwise turn one hint into a log of its own.
+    const hint = secretHint();
+    if (hint) console.warn(hint);
+
     main().catch(handleError);
   }
 }
 
 module.exports = {
   envFlag,
+  secretHint,
   eventFilters,
   withEscapedAttributes,
   isNewEvent,

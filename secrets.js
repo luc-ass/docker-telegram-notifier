@@ -19,12 +19,23 @@ function loadFileSettings(names) {
     const file = process.env[`${name}_FILE`];
     if (!file) continue;
 
+    let value;
     try {
-      process.env[name] = fs.readFileSync(file, 'utf8').trim();
+      value = fs.readFileSync(file, 'utf8').trim();
     } catch (e) {
       console.error(`Could not read ${name}_FILE at ${file}: ${e.message}`);
       process.exit(100);
     }
+
+    // An empty file would otherwise fall through to the configuration check,
+    // which can only report the variable as missing — and that sends people
+    // looking at the environment when the fault is in the secret itself.
+    if (value === '') {
+      console.error(`${name}_FILE at ${file} is empty`);
+      process.exit(100);
+    }
+
+    process.env[name] = value;
   }
 }
 
