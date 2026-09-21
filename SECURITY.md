@@ -26,13 +26,13 @@ Worth knowing before you deploy it, and relevant to how you judge a finding:
 
 - **The docker socket is full control of the host.** The documented setup
   mounts `/var/run/docker.sock` read-only, but `:ro` only protects the socket
-  file — the API behind it can still create privileged containers. Section 4
-  of the README describes running the notifier behind a socket proxy that
-  exposes only `version`, `info`, `ping` and `events`, which is the safer
-  arrangement.
+  file — the API behind it can still create privileged containers.
+  [docs/securing-the-docker-socket.md](docs/securing-the-docker-socket.md)
+  describes running the notifier behind a socket proxy that exposes only
+  `version`, `info`, `ping` and `events`, which is the safer arrangement.
 - **The bot token is a credential for your Telegram bot.** Passed as an
   environment variable it is readable through `docker inspect`. It can be
-  supplied as a file instead — see section 2.6 of the README.
+  supplied as a file instead — see [docs/secrets.md](docs/secrets.md).
 - **Container names, image tags and labels end up in messages.** They are
   HTML-escaped before being sent, so a container whose labels contain markup
   cannot break or forge the notification.
